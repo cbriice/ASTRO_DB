@@ -1,0 +1,255 @@
+import dash, base64, io
+from dash import dcc, html, Input, Output, State, ctx, ALL
+from layouts_graphinterface import info_not_plotall, decide_plotall, graphmain_individual, info_plotall, show_plotall, dummy_decide_plotall, color_adjust 
+from layouts_graphinterface import graphmain_stacked
+from utils.helpers import ntng, get_keys, verify_existence, verify_stack, display_stack, generate_dset_list
+from utils.data_compiler import compile_plot, compile_stacked_plots
+from utils.tools import decode_color_att
+import plotly.graph_objects as go
+import utils.plot_tools as pt
+from utils.constants import MASTER_FILE
+
+def register_graph_callbacks(app):
+
+    #graphmain_layout
+    @app.callback(
+        Output('graph-page-2', 'children'),
+        Input('confirm-stacked', 'n_clicks'),
+        State('stacked-or-not', 'value')
+    )
+    def graph_page1(n, stacked):
+        if n == 0:
+            return ""
+        else:
+            if stacked == 'stacked':
+                return graphmain_stacked()
+            else:
+                return graphmain_individual()
+   
+   #---------------------------------------------------------------- not stacked case
+   #graphmain_individual submit path here
+    @app.callback(
+        [Output('graph-target-ops', 'data'),
+         Output('graph-path-confirm', 'children'),
+         Output('graph-path', 'data'),
+         Output('graph-page-3', 'children')],
+        Input('submit-ind-graph-path', 'n_clicks'),
+        State('data-path', 'value')
+    )
+    def take_path(n_clicks, path):
+        if n_clicks == 0:
+            return "", "", "", ""
+        else:
+            verification, yes = verify_existence(path)
+            if yes:
+                ops = get_keys(path, MASTER_FILE)
+                if not ops:
+                    n = path.split('/')[-1]
+                    ops = {n: n}
+                    return ops, verification, path, dummy_decide_plotall()
+                return ops, verification, path, decide_plotall()
+            else:
+                return "", verification, "", ""
+    
+    #decide_plotall decide if plotting all valid or just targets
+    @app.callback(
+        Output('graph-page-4', 'children'),
+        Input('submit-plot-all', 'n_clicks'),
+        State('plot-all-from-df', 'value'),
+        State('graph-target-ops', 'data')
+    )
+    def smh(n, to_plot, target_ops):
+        if n == 0:
+            return ntng()
+        else:
+            if to_plot == 'plot-single':
+                return info_not_plotall(target_ops)
+            else:
+                return info_plotall()
+    
+    #dummy options to make thing idiot proof
+    @app.callback(
+        Output('dummy-graph-page-4', 'children'),
+        Input('dummy-submit-plot-all', 'n_clicks'),
+        State('graph-target-ops', 'data')
+    )
+    def dummy(n, target_ops):
+        if n == 0:
+            return ""
+        else:
+            return info_not_plotall(target_ops)
+    
+    #------------------------------------ "plot all from dataset" case
+    #info_plotall
+    @app.callback(
+        [Output('graph-page-5', 'children'),
+         Output('pa-plot-list', 'data')],
+        Input('submit-all-graph-data', 'n_clicks'),
+        State('graph-dim-pa', 'value'),
+        State('metric-pa', 'value'),
+        State('graph-path', 'data'),
+        prevent_initial_call = True
+    )
+    def handle_plotall(n, dim, metric, path):
+        #print(path)
+        if n == 0:
+            return ""
+        else:
+            metric_b = True if metric == 'metric-true' else False
+        #because of previous ui selections, this is guaranteed to return a list of either 2d or 3d plots of all plottable data from one dataframe. -> no target arg
+            plots = compile_plot(           
+                path = path, 
+                master_file = MASTER_FILE, 
+                dim = int(dim), 
+                target = None,
+                metric = metric_b, 
+                plot_all_from_df = True
+            )
+            plot_dict = {}
+            dict_to_store = {}
+            for i, (name, plot) in enumerate(plots):
+                if plot is None or not hasattr(plot, 'to_dict'):
+                    print(f'Skipping invalid plot for {name}: {type(plot)}')
+                    continue
+                plot_dict[name] = dcc.Graph(id = f'plot{i}', figure = plot)
+                dict_to_store[name] = plot.to_dict()
+            
+            if not plots or not isinstance(plots, list):
+                print(f'No valid plots in {plots}')
+                return "", {}
+            
+            return show_plotall(plot_dict), dict_to_store
+
+    #show_plotall triggered by submit button, shows graphs from checklist
+    @app.callback(
+        Output('pa-plot-output', 'children'),
+        Input('submit-pa-graph-choices', 'n_clicks'),
+        State('pa-plot-list', 'data'),
+        State('pa-plot-selector', 'value')
+    )
+    def show_pa_plots(n, plot_dict, selected_plots):
+        if not plot_dict or not selected_plots:
+            return html.Span('No selection was made, nothing to display', style = {'color': 'gray'})
+        
+        graphs = []
+        for i, plt in enumerate(selected_plots):
+            if plt in plot_dict:
+                fig = plot_dict[plt]
+                fig = go.Figure(fig) if isinstance(fig, dict) else fig
+                graphs.append(
+                    html.Div([
+                        dcc.Graph(
+                            id = f'plot-{i}', 
+                            figure = fig,
+                            style = {'width': '100%', 'maxWidth': 'none'}
+                        )]
+                    ))
+        return html.Div(graphs, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
+
+    #---------------------------------- "plot single dataset" case
+    #info_not_plotall
+    @app.callback(
+        [Output('npa-graph-output', 'children'),
+         Output('color-axis-shit', 'children'),
+         Output('npa-stored-plots', 'data')],
+        Input('submit-ind-graph-data', 'n_clicks'),
+        State('target-ind-npa', 'value'),
+        State('graph-dim-npa', 'value'),
+        State('metric-npa', 'value'),
+        State('graph-path', 'data')
+    )
+    def these_names_dont_matter(n, target, dim, metric, path):
+        if n == 0:
+            return html.Div(), html.Div(), None
+        else:
+            metric_b = True if metric == 'metric-true' else False
+            plot = compile_plot(
+                path = path,
+                master_file = MASTER_FILE,
+                dim = int(dim),
+                target = target,
+                metric = metric_b,
+                plot_all_from_df = False
+            )
+            if isinstance(plot, list):
+                if len(plot) == 1:
+                    plot = plot[0][1]
+                else:
+                    print(f'[ERROR] Got multiple plots in single-plot path. {plot}')
+                    return html.Div("Invalid result: expected one plot", style = {'color': 'red'}), html.Div(), None
+                
+            plot.update_layout(autosize = False, width = 1500, height = 800)
+            graph = html.Div([dcc.Graph(id = f'plot-0', figure = plot)])
+            if int(dim) == 2:
+                return html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'}), html.Div(), None
+            else:
+                return html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'}), color_adjust(), plot
+
+    #color scale adjustment callback
+    @app.callback(
+        Output('new-scale-3d-plot', 'children'),
+        Input('submit-color-scale', 'n_clicks'),
+        State('color-min', 'value'),
+        State('color-max', 'value'),
+        State('npa-stored-plots', 'data')
+    )
+    def dddd(n, cmin, cmax, plot):
+        if n == 0:
+            return ""
+        else:
+            fig = decode_color_att(plot)
+            for trace in fig.data:
+                if hasattr(trace, 'marker') and hasattr(trace.marker, 'color'):
+                    trace.marker.cmin = cmin
+                    trace.marker.cmax = cmax
+            fig.update_layout(coloraxis = dict(cmin = cmin, cmax = cmax))
+
+            return html.Div([
+                html.Br(),
+                html.H5('Adjusted graph'),
+                dcc.Graph(id = f'plot-1', figure = fig)
+            ])
+
+    #------------------------------------------------------------------------------------------------------ stacked case
+    #initial stacker page
+    @app.callback(
+        [Output('stackers', 'data'),
+         Output('status-stackers', 'children'),
+         Output('stacker-current-list', 'children')],
+        [Input('save-stacker', 'n_clicks'),
+         Input('clear-stackers', 'n_clicks')],
+        State('stackers', 'data'),
+        State('stack-addy-input', 'value'),
+        prevent_initial_call = True
+    )
+    def stacker1(n1, n2, stackerlist, stack_addy):
+        trigg = ctx.triggered_id
+
+        if trigg == 'save-stacker':
+            validation, check = verify_stack(stack_addy, stackerlist)
+            update = stackerlist.copy()
+
+            if check:
+                update.append(stack_addy)
+                return update, validation, display_stack(update)
+            else:
+                return ntng(), validation, display_stack(update)
+        
+        elif trigg == 'clear-stackers':
+            return [], 'List of plots to stack cleared.', ''
+        
+        else:
+            return ntng(), ntng(), ntng()
+    
+
+    @app.callback(
+        Output('stacked-plot', 'children'),
+        Input('submit-stackers', 'n_clicks'),
+        State('stackers', 'data')
+    )
+    def show_stack(n, stack):
+        if n == 0:
+            return ""
+        else:
+            normalized_times = pt.normalize_times(stack)
+            return compile_stacked_plots(stack, normalized_times)
