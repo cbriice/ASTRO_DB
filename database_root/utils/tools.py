@@ -5,6 +5,7 @@ import plotly.graph_objects as go
 from dash import html, dash_table
 import utils.plot_tools as pt
 import xarray as xr
+from utils.lock import master_lock
 
 def returnMetric(ips_file)->pd.DataFrame:
         met_df = ips_file
@@ -36,10 +37,11 @@ def moving_average(data, window_size: int):
 def scrub_file(file):
     confirm = input(f'WARNING: Calling this function will erase all data in {file}. Input "y" to continue: ')
     if confirm.lower() == 'y':
-        with h5tbx.File(file, 'a') as f:
-            for key in list(f.keys()):
-                del f[key]
-            print(f'All top level groups in {file} have been deleted.')
+        with master_lock:
+            with h5tbx.File(file, 'a') as f:
+                for key in list(f.keys()):
+                    del f[key]
+                print(f'All top level groups in {file} have been deleted.')
     else:
         print("Scrub canceled.")
     
@@ -170,4 +172,14 @@ def process_data_for_preview(path, master_file):
         else:
             print(f'somehow the path passed isnt in master file. {path}')
             return None, False
-            
+
+def percent_diff(num1, num2):
+    if isinstance(num1, (int, float)) and isinstance(num2, (int, float)):
+        return ((num1 - num2) / num1) * 100
+    else:
+        print(f'Skipping non-numerical attribute values [{num1}, {num2}]')
+        return 0
+    
+def magnitude(vec):
+    return np.sqrt(sum(vec[i] * vec[i] for i in vec))
+

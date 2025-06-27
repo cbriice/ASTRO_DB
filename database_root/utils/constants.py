@@ -4,7 +4,7 @@ MASTER_FILE = 'master2.h5'
 
 MAIN_MENU_OPS = ['Browse database', 'Graph interface', 'Add attributes',
                 'Search specific attributes', 'Upload data',
-                'Create file (group)', 'Upload initial machine file']
+                'Create file (group)', 'Upload initial machine file', 'Analyze data']
 
 COLUMN_MAP_STANDARD = {
     'SpinTrq': 'Spindle Torque (ft-lb)',
@@ -72,7 +72,7 @@ BUILD_KEYS = [CONTEXT_K, BUILD_DETAILS_K, PARAMETERS_K, IDK]
 
 #---------exsitu
 ATT_SUB_EXSITU = ['Temper', 'Thermal Practice', 'Air Thermocouples', 'Load Thermocouples', 
-                  'Material Spec', 'Tensile', 'Fracture Toughness', 'Smooth Fatigue', 'PIP', 'Metallography']
+                  'Material Spec', 'Tensile', 'Fracture Toughness', 'Smooth Fatigue', 'PIP', 'Metallography']      #isnt this a beautiful block of code??
 #above are categories, below are attribute keys to be entered into db
 TEMPER_K = ['temper']
 THERM_PRAC_K = ['heat_treat', 'age1', 'age2', 'age3', 'anneal', 'homogenization']

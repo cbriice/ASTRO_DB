@@ -16,7 +16,7 @@ def register_att_callbacks(app):
         if n == 0: 
             return '', ntng()
         else:
-            with h5tbx.File(MASTER_FILE, 'a') as master:
+            with h5tbx.File(MASTER_FILE, 'r') as master:
                 if address not in master:
                     return html.Span(f'{address} not found in {MASTER_FILE}', style = {'color': 'red'}), ntng()
                 

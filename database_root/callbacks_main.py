@@ -11,6 +11,7 @@ from layouts_uploaddata import uploaddata_layout
 from layouts_search import search_atts
 from layouts_atts import att_main
 from utils.constants import MASTER_FILE
+from layouts_analysis import analysis_main
 
 def register_main_callbacks(app):
     @app.callback(
@@ -44,6 +45,9 @@ def register_main_callbacks(app):
         
         elif choice == MAIN_MENU_OPS[6]:                #upload machine data
             return uploadmachine_layout()
+        
+        elif choice == MAIN_MENU_OPS[7]:
+            return analysis_main()
         
         else:
             return "Idk what happened but we got here somehow"

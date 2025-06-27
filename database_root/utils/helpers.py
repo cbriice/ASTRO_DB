@@ -5,17 +5,18 @@ from utils.tools import find_header_line
 from utils.plot_tools import universal_decode
 from dash import html
 from pandas import DataFrame as df
-from utils.constants import METRICS_MACHINEFILE, MASTER_FILE
+from utils.constants import METRICS_MACHINEFILE, MASTER_FILE, COLUMN_MAP_STANDARD
 import numpy as np
-
+from utils.lock import master_lock
 
 #save dataframe to database
 def save_df(master_file, build_path, df: pd.DataFrame, name='raw_csv_data'):
-    with h5tbx.File(master_file, 'a') as master:
-        g = master.require_group(f'{build_path}/{name}')
-        for col in df.columns:
-            data = df[col].values
-            g.create_dataset(name = col, data = data)
+    with master_lock:
+        with h5tbx.File(master_file, 'a') as master:
+            g = master.require_group(f'{build_path}/{name}')
+            for col in df.columns:
+                data = df[col].values
+                g.create_dataset(name = col, data = data)
 
 #retrieve saved dataframe. would pass "machine_data" as name argument for example to reconstruct original machine csv from where it's saved
 def get_df(master_file, path, name):
@@ -159,28 +160,29 @@ def get_stats(userfile: pd.DataFrame, mets, csv_path) -> dict:
     
 #assume path passed here is the parent of the dataset
 def auto_assign_atts(path):
-    with h5tbx.File(MASTER_FILE, 'a') as master:
-        if path in master:
-            node = master[path]
-            if isinstance(node, h5py.Group):    #should always be true but sanity check
+    with master_lock:
+        with h5tbx.File(MASTER_FILE, 'a') as master:
+            if path in master:
+                node = master[path]
+                if isinstance(node, h5py.Group):    #should always be true but sanity check
 
-                for name, ds in node.items():
-                    if isinstance(ds, h5py.Dataset) and np.issubdtype(ds.dtype, np.number):    #only do this for datasets not subgroups
-                        data = ds[:]
-                        node.attrs[f'{name}_min'] = np.min(data)
-                        node.attrs[f'{name}_max'] = np.max(data)
-                        node.attrs[f'{name}_avg'] = np.mean(data)
-                        print(f'Stats for {name} processed')
-                    else:
-                        print(f'Skipped non-numeric dataset: {name}')
-                
-                return True
+                    for name, ds in node.items():
+                        if isinstance(ds, h5py.Dataset) and np.issubdtype(ds.dtype, np.number):    #only do this for datasets not subgroups
+                            data = ds[:]
+                            node.attrs[f'{name}_min'] = np.min(data)
+                            node.attrs[f'{name}_max'] = np.max(data)
+                            node.attrs[f'{name}_avg'] = np.mean(data)
+                            print(f'Stats for {name} processed')
+                        else:
+                            print(f'Skipped non-numeric dataset: {name}')
+                    
+                    return True
+                else:
+                    print(f'{path} not a group and it should be so idk what u doing')
+                    return False
             else:
-                print(f'{path} not a group and it should be so idk what u doing')
+                print(f'{path} not in {master}')
                 return False
-        else:
-            print(f'{path} not in {master}')
-            return False
                 
 def get_all_att_keys():
     att_keys = set()
@@ -190,3 +192,15 @@ def get_all_att_keys():
         
         master.visititems(collect_attrs)
     return sorted(att_keys)
+
+def analysis_table(comp_list):
+    table_rows = []
+    for key, val in comp_list:
+        table_rows.append(html.Tr([html.Td(COLUMN_MAP_STANDARD.get(key, key)), html.Td(val)]))
+
+    return html.Table([
+        html.Thead(
+            html.Tr([html.Th('Metric'), html.Th('% Difference')]),
+            html.Tbody(table_rows)
+        )
+    ])

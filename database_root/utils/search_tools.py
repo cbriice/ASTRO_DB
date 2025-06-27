@@ -1,10 +1,11 @@
 from dash import dcc, html
 import h5rdmtoolbox as h5tbx
-from utils.tools import intersection
+from utils.tools import intersection, percent_diff, magnitude
 from collections import defaultdict
 from utils.constants import COLUMN_MAP_STANDARD
 import numpy as np
 import h5py
+from utils.lock import master_lock
    
 #find shit that meets certain attribute conditions
 def lowerbound_search(master_file, att, lowerbound, groupsonly):
@@ -144,12 +145,28 @@ def show_datasets(path, master_file):
 #more generalized version of add_attrs() in backend_deep.py which only handles dict case
 #basically i forgot that other function was there and wrote this one and ima just leave them 
 def add_attribute(path, att_name, att_value, master_file):
-    with h5tbx.File(master_file, 'a') as master:
-        if path not in master:
-            print(f'{path} not found in {master}')
-            return False
-        node = master[path]
-        node.attrs[att_name] = att_value
-        print(f'Attribute [{att_name}: {att_value}] added to {path}')
-        return True
-                
+    with master_lock:
+        with h5tbx.File(master_file, 'a') as master:
+            if path not in master:
+                print(f'{path} not found in {master}')
+                return False
+            node = master[path]
+            node.attrs[att_name] = att_value
+            print(f'Attribute [{att_name}: {att_value}] added to {path}')
+            return True
+        
+#conformance comp for comparing two builds or data or whatever
+def conformance_comp(path1, path2, master_file):
+    percent_list = []
+    with h5tbx.File(master_file, 'r') as master:
+        node = master[path1]
+        node_atts = node.attrs.items()
+        comp = master[path2]
+        comp_atts = comp.attrs.items()
+
+        for key, val in node_atts:
+            if key in comp_atts:
+                percent_list.append((key, percent_diff(node.attrs[key], comp.attrs[key])))
+
+    normalized_diff = magnitude(percent_list)
+    return percent_list, normalized_diff

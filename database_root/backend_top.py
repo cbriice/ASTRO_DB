@@ -6,6 +6,7 @@ import h5rdmtoolbox as h5tbx
 import os
 from utils.helpers import get_stats, save_df
 from utils.constants import MACHINEFILE_HEADERS
+from utils.lock import master_lock
 
 #create master file (only needs to run once)
 def create_master_file(master_path: str, metadata: dict = None):
@@ -42,20 +43,21 @@ def merge_build_to_master(master_file, alloy: str, build_id:str, build_file, met
     metadata.update({'id': build_id})      #give every build an attribute with its id for search purposes
     metadata.update({'alloy': alloy})
 
-    with h5tbx.File(master_file, 'a') as master, h5tbx.File(build_file, 'r') as build:
-        if f'/{alloy}/builds/{build_id}' in master and master[f'/{alloy}/builds/{build_id}'].keys() is not None:
-            print(f'[SKIP] Build {build_id} already exists in master file.')
-            return
-        else:
-            print(f'Adding build {build_id} to master file...')
-            master.copy(build['/machine_data'], f'/{alloy}/builds/{build_id}/machine_data')
-            print(f'Tagging {build_path}.')
-            g = master.require_group(build_path)
-            for attr, value in metadata.items():
-                g.attrs[attr] = value
-        
-        if f'/{alloy}/builds/{build_id}' in master:
-            print(f'{build_id} successfully merged into {master_file}.')
+    with master_lock:
+        with h5tbx.File(master_file, 'a') as master, h5tbx.File(build_file, 'r') as build:
+            if f'/{alloy}/builds/{build_id}' in master and master[f'/{alloy}/builds/{build_id}'].keys() is not None:
+                print(f'[SKIP] Build {build_id} already exists in master file.')
+                return
+            else:
+                print(f'Adding build {build_id} to master file...')
+                master.copy(build['/machine_data'], f'/{alloy}/builds/{build_id}/machine_data')
+                print(f'Tagging {build_path}.')
+                g = master.require_group(build_path)
+                for attr, value in metadata.items():
+                    g.attrs[attr] = value
+            
+            if f'/{alloy}/builds/{build_id}' in master:
+                print(f'{build_id} successfully merged into {master_file}.')
     
     #delete original file to keep it from clogging local directory
     os.remove(build_file)
@@ -92,26 +94,27 @@ def create_sensor_hdf5(sensor_type: str, csv_path: str, metadata: dict = None):
 
 #add data to build file (coded with syntax saying sensor but can be used for any data)
 def merge_data_to_build(sensor_file, master_file, sensor_type: str, build_id: str):
-    with h5tbx.File(sensor_file, 'r') as sensor, h5tbx.File(master_file, 'a') as master:
-        sensor_group = f'{sensor_type}_data'
-        build_path = f'/builds/{build_id}'
-        target_path = f'{build_path}/{sensor_group}'
-        #print(list(sensor.keys()))  
-              
-        if build_path not in master:
-            raise ValueError(f'{build_id} not found in master file.')
-        if target_path in master:
-            print(f'[SKIP] Dataset {sensor_group} already exists in {build_path}: {target_path}')
-            return
-        
-        try:
-            master.require_group(f'/builds/{build_id}')
-            master.copy(sensor[f'/{sensor_type}_data'], f'/builds/{build_id}/{sensor_type}_data')
-            print(f'Merged {sensor_type} data into build file: /builds/{build_id}')
-        except Exception as e:
-            print(f'Failed to copy sensor data: {e}')
+    with master_lock:
+        with h5tbx.File(sensor_file, 'r') as sensor, h5tbx.File(master_file, 'a') as master:
+            sensor_group = f'{sensor_type}_data'
+            build_path = f'/builds/{build_id}'
+            target_path = f'{build_path}/{sensor_group}'
+            #print(list(sensor.keys()))  
+                
+            if build_path not in master:
+                raise ValueError(f'{build_id} not found in master file.')
+            if target_path in master:
+                print(f'[SKIP] Dataset {sensor_group} already exists in {build_path}: {target_path}')
+                return
+            
+            try:
+                master.require_group(f'/builds/{build_id}')
+                master.copy(sensor[f'/{sensor_type}_data'], f'/builds/{build_id}/{sensor_type}_data')
+                print(f'Merged {sensor_type} data into build file: /builds/{build_id}')
+            except Exception as e:
+                print(f'Failed to copy sensor data: {e}')
 
-    #delete original file to keep it from clogging local directory    
-    os.remove(sensor_file)
+        #delete original file to keep it from clogging local directory    
+        os.remove(sensor_file)
 
         

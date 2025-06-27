@@ -45,8 +45,10 @@ def register_upload_callbacks(app):
             else:
                 if not any(a in parent_path for a in AA_ALLOY_OPS):
                     return html.Span(f'Invalid path {parent_path}', style = {'color': 'red'}), ntng(), ntng(), ntng()
-                if 'builds' not in parent_path:
+                if 'builds' not in parent_path or ' ' in parent_path:
                     return html.Span(f'Invalid path {parent_path}', style = {'color': 'red'}), ntng(), ntng(), ntng()
+                if ' ' in name:
+                    return html.Span(f'Invalid name {name}', style = {'color': 'red'}), ntng(), ntng(), ntng()
                 
                 return upload_file_section(1), parent_path, name, 'build'
             
