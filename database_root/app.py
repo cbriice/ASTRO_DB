@@ -123,7 +123,7 @@ def serve_layout():
         dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory')     
 ])
 
-app.layout = serve_layout()
+app.layout = serve_layout
 
 register_main_callbacks(app)
 register_upload_callbacks(app)
