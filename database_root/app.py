@@ -27,7 +27,9 @@ azure = oauth.register(
     client_secret = os.getenv('AZURE_CLIENT_SECRET'),  
     access_token_url = f'https://login.microsoftonline.us/fd4ef3c7-ccdb-4a12-99ce-3f4e52c50d67/oauth2/v2.0/token', 
     authorize_url = f'https://login.microsoftonline.us/fd4ef3c7-ccdb-4a12-99ce-3f4e52c50d67/oauth2/v2.0/authorize',
-    api_base_url = 'https://graph.microsoft.com/v1.0/',
+    api_base_url = 'https://graph.microsoft.us/v1.0/',
+    userinfo_endpoint = 'https://graph.microsoft.us/oidc/userinfo',
+    jwks_uri = 'https://login.microsoftonline.us/fd4ef3c7-ccdb-4a12-99ce-3f4e52c50d67/discovery/v2.0/keys',
     client_kwargs = {'scope': 'openid email profile'}
 )
 
