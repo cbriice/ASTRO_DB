@@ -40,8 +40,11 @@ def login():
 
 @server.route('/login/callback')
 def auth_callback():
+    if not request.args.get('code'):
+        return "Invalid or unsolicited callback - no code provided.", 400
+
     if request.args.get('error'):
-        return f'Oauth Error: {request.args.get('error_description', 'Unknown error')}', 400
+        return f'Oauth Error: {request.args.get("error_description", "Unknown error")}', 400
     
     try:
         token = azure.authorize_access_token()
