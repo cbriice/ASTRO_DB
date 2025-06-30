@@ -43,10 +43,11 @@ def auth_callback():
     token = azure.authorize_access_token()
     user = azure.get('me').json()
     email = user.get('mail') or user.get('userPrincipalName')
-    if not email.endswith('@astroa.org'):
-        return "Access denied", 403
-    session['user'] = email
-    return redirect('/')
+    if email:
+        if not email.endswith('@astroa.org'):
+            return "Access denied", 403
+        session['user'] = email
+        return redirect('/')
 
 @server.route('/logout')
 def logout():
