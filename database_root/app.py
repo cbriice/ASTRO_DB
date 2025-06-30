@@ -12,10 +12,12 @@ from callbacks_analysis import register_analysis_callbacks
 from flask import Flask, session, redirect, url_for, request
 # type: ignore[import]
 from authlib.integrations.flask_client import OAuth # type: ignore
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 #-------------------------- Authentication system setup --------------------------------
 
 server = Flask(__name__)
+server.wsgi_app = ProxyFix(server.wsgi_app, x_proto = 1, x_host = 1)
 server.secret_key = os.getenv("FLASK_SECRET_KEY")
 
 oauth = OAuth(server)
