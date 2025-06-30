@@ -40,6 +40,7 @@ def login():
 
 @server.route('/login/callback')
 def auth_callback():
+    print(f'Callback triggered with args: {dict(request.args)}')
     if not request.args.get('code'):
         return "Invalid or unsolicited callback - no code provided.", 400
 
