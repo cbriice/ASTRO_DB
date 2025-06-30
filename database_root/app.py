@@ -58,7 +58,12 @@ def restrict_access():
 
 #----------------------------- Dash App Setup ------------------------------------------
 
-app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions = True)
+app = dash.Dash(
+    __name__, 
+    server = server,
+    external_stylesheets=[dbc.themes.BOOTSTRAP], 
+    suppress_callback_exceptions = True
+)
 app.title = 'ASTRO Database Interface'
 
 #master file should be in the app working directory on the server. if this changes, update logic to have absolute filepath attached to master2.h5
