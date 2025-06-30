@@ -25,8 +25,8 @@ azure = oauth.register(
     name = 'azure',
     client_id = os.getenv('AZURE_CLIENT_ID'), 
     client_secret = os.getenv('AZURE_CLIENT_SECRET'),  
-    access_token_url = f'https://login.microsoftonline.com/{os.getenv("AZURE_TENANT_ID")}/oauth2/v2.0/token', 
-    authorize_url = f'https://login.microsoftonline.com/{os.getenv("AZURE_TENANT_ID")}/oauth2/v2.0/authorize',
+    access_token_url = f'https://login.microsoftonline.us/fd4ef3c7-ccdb-4a12-99ce-3f4e52c50d67/oauth2/v2.0/token', 
+    authorize_url = f'https://login.microsoftonline.us/fd4ef3c7-ccdb-4a12-99ce-3f4e52c50d67/oauth2/v2.0/authorize',
     api_base_url = 'https://graph.microsoft.com/v1.0/',
     client_kwargs = {'scope': 'openid email profile'}
 )
