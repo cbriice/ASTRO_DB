@@ -50,12 +50,12 @@ def auth_callback():
     try:
         token = azure.authorize_access_token()
         if not token:
-            return html.Div("Login failed: No token received. Try again or contact admin."), 400
+            return "Login failed: No token received. Try again or contact admin.", 400
 
         user = azure.get('me').json()
         email = user.get('mail') or user.get('userPrincipalName')
         if not email:
-            return html.Div("Login failed: No valid email found. Try again or contact admin."), 400
+            return "Login failed: No valid email found. Try again or contact admin.", 400
         if email:
             if not email.endswith('@astroa.org'):
                 return "Access denied", 403
@@ -82,6 +82,12 @@ def restrict_access():
         return  #allow internal Dash requests, static assets, and auth endpoints
     if 'user' not in session:
         return redirect('/login')
+    
+@server.route('/')
+def home():
+    if 'user' not in session:
+        return redirect('/login')
+    return app.index()
 
 #----------------------------- Dash App Setup ------------------------------------------
 
@@ -96,7 +102,11 @@ app.title = 'ASTRO Database Interface'
 #master file should be in the app working directory on the server. if this changes, update logic to have absolute filepath attached to master2.h5
 dbf.create_master_file(MASTER_FILE, {'machine': 'meld piece of shit'})
 
-app.layout = html.Div([
+def serve_layout():
+    if 'user' not in session:
+        return dcc.Location(href = '/login', id = 'redirect')
+    
+    return html.Div([
     html.H2("best database of all time", style = {'text-align': 'center'}),
 
     html.Div(
@@ -112,6 +122,8 @@ app.layout = html.Div([
         dcc.Store(id = 'global-storage-1', data = [], storage_type = 'memory'),
         dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory')     
 ])
+
+app.layout = serve_layout()
 
 register_main_callbacks(app)
 register_upload_callbacks(app)
