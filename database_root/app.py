@@ -50,12 +50,12 @@ def auth_callback():
     try:
         token = azure.authorize_access_token()
         if not token:
-            return "No token received", 400
+            return html.Div("Login failed: No token received. Try again or contact admin."), 400
 
         user = azure.get('me').json()
         email = user.get('mail') or user.get('userPrincipalName')
         if not email:
-            return "No email in token", 400
+            return html.Div("Login failed: No valid email found. Try again or contact admin."), 400
         if email:
             if not email.endswith('@astroa.org'):
                 return "Access denied", 403
@@ -73,8 +73,13 @@ def logout():
 
 @server.before_request
 def restrict_access():
-    if request.path.startswith('/_dash') or request.path.startswith('/login') or request.path.startswith('/static'):
-        return  #allow internal Dash requests and static assets
+    allowed_paths = ['/login', '/login/callback', '/logout']
+    if (
+        request.path.startswith('/_dash')
+        or request.path.startswith('/static')
+        or request.path in allowed_paths
+    ):
+        return  #allow internal Dash requests, static assets, and auth endpoints
     if 'user' not in session:
         return redirect('/login')
 
