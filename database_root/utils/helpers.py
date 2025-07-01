@@ -157,7 +157,13 @@ def get_stats(userfile: pd.DataFrame, mets, csv_path) -> dict:
     if csv_path:
         stats.update({'csv_path': f'{csv_path}'})             
     return stats
-    
+
+def to_float(val):
+    try:
+        return np.float64(val.item())
+    except AttributeError:
+        return np.float64(val)    
+
 #assume path passed here is the parent of the dataset
 def auto_assign_atts(path):
     with master_lock:
@@ -169,9 +175,9 @@ def auto_assign_atts(path):
                     for name, ds in node.items():
                         if isinstance(ds, h5py.Dataset) and np.issubdtype(ds.dtype, np.number):    #only do this for datasets not subgroups
                             data = ds[:]
-                            node.attrs[f'{name}_min'] = np.min(data)
-                            node.attrs[f'{name}_max'] = np.max(data)
-                            node.attrs[f'{name}_avg'] = np.mean(data)
+                            node.attrs[f'{name}_min'] = to_float(np.min(data))
+                            node.attrs[f'{name}_max'] = to_float(np.max(data))
+                            node.attrs[f'{name}_avg'] = to_float(np.mean(data))
                             print(f'Stats for {name} processed')
                         else:
                             print(f'Skipped non-numeric dataset: {name}')
