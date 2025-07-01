@@ -10,7 +10,7 @@ from layouts_search import search_atts
 from layouts_atts import att_main
 from utils.constants import MASTER_FILE
 from layouts_analysis import analysis_main
-from flask import session
+from flask import session, request
 
 def register_main_callbacks(app):
     @app.callback(
@@ -132,7 +132,9 @@ def register_main_callbacks(app):
             return '', ntng()
 
         try:
-            response = requests.get('https://astrodatabase.online/generate-bypass', timeout = 5)
+            session_cookie = request.cookies.get('session')
+            cookies = {'session': session_cookie} if session_cookie else {}
+            response = requests.get('https://astrodatabase.online/generate-bypass', cookies = cookies, timeout = 5)
             resp_json = response.json()
 
             if 'bypass_url' in resp_json:
