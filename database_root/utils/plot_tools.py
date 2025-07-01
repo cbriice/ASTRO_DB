@@ -1,7 +1,6 @@
 #plot_tools.py | generates plots and shit idk. functions called in data_compiler.py mostly
 #lowkey the _df functions dont even get called a single time in my code somehow even though i intended for them to so they might be junk but ima leave em bc fuck it
 
-#btw fuck github this piece of shit is impossible to use and unintuitive as fuck. not even gpt can help me do u understand how crazy that is
 import pandas as pd
 from plotly import graph_objects as go, express as px
 from utils.constants import COLUMN_MAP_METRIC, COLUMN_MAP_STANDARD, MASTER_FILE
