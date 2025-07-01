@@ -54,7 +54,7 @@ MACHINEFILE_HEADERS = ['SpinPwr', 'SpinTrq', 'SpinVel', 'SpinSP', 'FeedVel', 'Fe
                        'Ktype1', 'Ktype2', 'Ktype3', 'Ktype4', 'ToolTemp',
                        'XTrq', 'YTrq', 'ZTrq', 'PathVel']
 
-WHITELIST = ['login', 'auth_callback', 'static', 'healthcheck']
+WHITELIST = ['login', 'auth_callback', 'static', 'healthcheck', 'generate_bypass']
 
 #------------------------------------------------------------------------------------------------------- attribute constants
 #for demo but mimicking real 
