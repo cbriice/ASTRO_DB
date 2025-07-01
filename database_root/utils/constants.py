@@ -54,6 +54,9 @@ MACHINEFILE_HEADERS = ['SpinPwr', 'SpinTrq', 'SpinVel', 'SpinSP', 'FeedVel', 'Fe
                        'Ktype1', 'Ktype2', 'Ktype3', 'Ktype4', 'ToolTemp',
                        'XTrq', 'YTrq', 'ZTrq', 'PathVel']
 
+WHITELIST = ['login', 'auth_callback', 'static', 'healthcheck']
+
+#------------------------------------------------------------------------------------------------------- attribute constants
 #for demo but mimicking real 
 X_OPS = [f'X{i}' for i in range(0, 7)]
 Y_OPS = [f'Y{i}' for i in range(0, 7)]

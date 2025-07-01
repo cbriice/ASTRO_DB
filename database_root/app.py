@@ -3,7 +3,7 @@ from dash import html, dcc
 import dash_bootstrap_components as dbc
 import backend_top as dbf
 from callbacks_main import register_main_callbacks
-from utils.constants import MAIN_MENU_OPS, MASTER_FILE
+from utils.constants import MAIN_MENU_OPS, MASTER_FILE, WHITELIST
 from callbacks_graphs import register_graph_callbacks
 from callbacks_uploaddata import register_upload_callbacks
 from callbacks_search import register_search_callbacks
@@ -14,7 +14,7 @@ from flask import Flask, session, redirect, url_for, request
 from authlib.integrations.flask_client import OAuth # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-#-------------------------- Authentication system setup --------------------------------
+#-------------------------- authentication system setup --------------------------------
 
 server = Flask(__name__)
 server.wsgi_app = ProxyFix(server.wsgi_app, x_proto = 1, x_host = 1)
@@ -52,15 +52,21 @@ def auth_callback():
         if not token:
             return "Login failed: No token received. Try again or contact admin.", 400
 
-        user = azure.get('me').json()
-        email = user.get('mail') or user.get('userPrincipalName')
+        user = azure.parse_id_token(token)
+        if not user:
+            return "Login failed: Unable to decode identity token.", 400
+        
+        email = user.get('mail') or user.get('preferred_username') or user.get('upn')
         if not email:
             return "Login failed: No valid email found. Try again or contact admin.", 400
-        if email:
-            if not email.endswith('@astroa.org'):
-                return "Access denied", 403
-            session['user'] = email
-            return redirect('/')
+        
+        if not email.endswith('@astroa.org'):
+            return "Access denied: unauthorized domain", 403
+        
+        print(f'Email parsed from token: {email}')
+        session['user'] = email
+        print(f'Successful login: {email}')
+        return redirect('/')
         
     except Exception as e:
         print(f'OAuth error: {e}')
@@ -73,15 +79,16 @@ def logout():
 
 @server.before_request
 def restrict_access():
+    if 'user' not in session and request.endpoint not in WHITELIST:
+        return redirect('/login')
+    
     allowed_paths = ['/login', '/login/callback', '/logout']
     if (
         request.path.startswith('/_dash')
         or request.path.startswith('/static')
         or request.path in allowed_paths
     ):
-        return  #allow internal Dash requests, static assets, and auth endpoints
-    if 'user' not in session:
-        return redirect('/login')
+        return  #allow internal dash requests, static assets, auth endpoints
     
 @server.route('/')
 def home():
@@ -89,7 +96,7 @@ def home():
         return redirect('/login')
     return app.index()
 
-#----------------------------- Dash App Setup ------------------------------------------
+#----------------------------- dash app setup ------------------------------------------
 
 app = dash.Dash(
     __name__, 
