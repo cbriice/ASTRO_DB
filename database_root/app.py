@@ -101,7 +101,7 @@ def generate_bypass():
     payload = {'email': 'guest'}
     token = serializer.dumps(payload)
     bypass_url = f'https://astrodatabase.online/bypass-login/{token}'
-    return f'Bypass link (1 hour): {bypass_url}'
+    return {'bypass_url': bypass_url}
 
 @server.route('/bypass-login/<token>')
 def bypass_login(token):

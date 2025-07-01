@@ -150,8 +150,9 @@ def add_machine_atts(parent):
 
 def admin_layout():
     return html.Div([
-        html.H4('Admin tools', style = {'text-align': 'center'}),
+        html.H4('Admin tools', style = {'padding-left': '800px'}),
         html.Br(),
         html.Div(html.Button("Generate bypass link", id = 'bypass-gen', n_clicks = 0), style = {'padding-left': '800px'}), html.Br(),
-        html.Div(id = 'bypass-link-output')
+        html.Div(id = 'bypass-link-output'),
+        dcc.Clipboard(id = 'copy-bypass-link', style = {'display': 'none'})
     ], style = {'padding-left': '50px', 'padding-right': '50px'})

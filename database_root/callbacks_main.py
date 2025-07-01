@@ -119,25 +119,28 @@ def register_main_callbacks(app):
 #--------------------------------------------------------------------------
 #under "admin" tab, allow admin user to generate a bypass link. block if guest user
     @app.callback(
-        Output('bypass-link-output', 'children'),
+        [Output('bypass-link-output', 'children'),
+         Output('copy-bypass-link', 'content')],
         Input('bypass-gen', 'n_clicks'),
         prevent_initial_call = True
     )
     def bypass_call(n):
         if session.get('user') == 'guest':
-            return html.Span('This function is disabled for guest users', style = {'color': 'red'})
+            return html.Span('This function is disabled for guest users', style = {'color': 'red'}), ntng()
         
         if n == 0:
-            return ''
+            return '', ntng()
 
         try:
             response = requests.get('https://astrodatabase.online/generate-bypass', timeout = 5)
             if response.status_code == 200:
+                bypass_url = response.json().get('bypass_url')
                 return html.Div([
-                    html.Span('Bypass link (valid for 1 hour):'),
-                    html.A(response.text, href = response.text, target = '_blank')
-                ])
+                    html.Span('Bypass link (valid for 1 hour):'), html.Br(),
+                    html.A(bypass_url, href = bypass_url, target = '_blank'), html.Br(),
+                    html.Span('Link auto-copied to clipboard.')
+                ]), bypass_url
             else:
-                return html.Span(f'Failed to generate bypass: {response.text}', style = {'color': 'red'})
+                return html.Span(f'Failed to generate bypass: {response.text}', style = {'color': 'red'}), ntng()
         except Exception as e:
-            return html.Span(f'Request error: {e}', style = {'color': 'red'})
+            return html.Span(f'Request error: {e}', style = {'color': 'red'}), ntng()
