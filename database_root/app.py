@@ -2,7 +2,7 @@ import dash, os
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import backend_top as dbf
-from flask import Flask, session, redirect, url_for, request
+from flask import Flask, session, redirect, url_for, request, jsonify
 # type: ignore[import]
 from authlib.integrations.flask_client import OAuth # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -101,7 +101,7 @@ def generate_bypass():
     payload = {'email': 'guest'}
     token = serializer.dumps(payload)
     bypass_url = f'https://astrodatabase.online/bypass-login/{token}'
-    return {'bypass_url': bypass_url}
+    return jsonify({'bypass_url': bypass_url})
 
 @server.route('/bypass-login/<token>')
 def bypass_login(token):

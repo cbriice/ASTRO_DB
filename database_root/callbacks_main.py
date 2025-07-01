@@ -133,13 +133,18 @@ def register_main_callbacks(app):
 
         try:
             response = requests.get('https://astrodatabase.online/generate-bypass', timeout = 5)
-            if response.status_code == 200:
-                bypass_url = response.json().get('bypass_url')
+            resp_json = response.json()
+
+            if 'bypass_url' in resp_json:
+                url = resp_json.get('bypass_url')
                 return html.Div([
                     html.Span('Bypass link (valid for 1 hour):'), html.Br(),
-                    html.A(bypass_url, href = bypass_url, target = '_blank'), html.Br(),
-                    html.Span('Link auto-copied to clipboard.')
-                ]), bypass_url
+                    html.A(url, href = url, target = '_blank'), html.Br(),
+                    html.Span('Link auto-copied to clipboard.', style = {'color': 'green'})
+                ]), url
+            
+            elif 'error' in resp_json:
+                return html.Span('Authentication error. Try re-logging in.', style={'color': 'red'}), ntng()
             else:
                 return html.Span(f'Failed to generate bypass: {response.text}', style = {'color': 'red'}), ntng()
         except Exception as e:
