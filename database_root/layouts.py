@@ -154,5 +154,5 @@ def admin_layout():
         html.Br(),
         html.Div(html.Button("Generate bypass link", id = 'bypass-gen', n_clicks = 0), style = {'padding-left': '800px'}), html.Br(),
         html.Div(id = 'bypass-link-output'),
-        dcc.Clipboard(id = 'copy-bypass-link', style = {'display': 'none'})
+        dcc.Clipboard(id = 'copy-bypass-link', content = '', style = {'position': 'absolute', 'opacity': 0, 'pointerEvents': 'none'})
     ], style = {'padding-left': '50px', 'padding-right': '50px'})
