@@ -142,11 +142,20 @@ def register_main_callbacks(app):
                     html.Span('Bypass link (valid for 1 hour):'), html.Br(),
                     html.A(url, href = url, target = '_blank'), html.Br(),
                     dcc.Clipboard(
-                        id = 'copy-bypass-link', 
-                        content = url, 
-                        style = {'position': 'absolute', 'opacity': 0, 'pointerEvents': 'none'}
+                        target_id = 'bypass-link-output', 
+                        title = 'Copy',
+                        style = {
+                            'cursor': 'pointer',
+                            'display': 'inline-block',
+                            'marginTop': '5px',
+                            'padding': '4px 8px',
+                            'border': '1px solid #ccc',
+                            'borderRadius': '5px',
+                            'backgroundColor': "#d9ff96",
+                            'color': '#333'
+                        }
                     ),
-                    html.Span('Link auto-copied to clipboard.', style = {'color': 'green'})
+                    html.Span('Click clipboard to copy.')
                 ])
             
             elif 'error' in resp_json:
