@@ -52,7 +52,7 @@ def auth_callback():
         if not token:
             return "Login failed: No token received. Try again or contact admin.", 400
 
-        user = azure.parse_id_token(token)
+        user = token.get('userinfo')
         if not user:
             return "Login failed: Unable to decode identity token.", 400
         
