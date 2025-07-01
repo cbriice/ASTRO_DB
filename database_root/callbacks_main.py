@@ -140,9 +140,9 @@ def register_main_callbacks(app):
                 url = resp_json.get('bypass_url')
                 return html.Div([
                     html.Span('Bypass link (valid for 1 hour):'), html.Br(),
-                    html.A(url, href = url, target = '_blank'), html.Br(),
+                    html.A(url, href = url, target = '_blank', id = 'bypass-link-anchor'), html.Br(),
                     dcc.Clipboard(
-                        target_id = 'bypass-link-output', 
+                        target_id = 'bypass-link-anchor', 
                         title = 'Copy',
                         style = {
                             'cursor': 'pointer',
