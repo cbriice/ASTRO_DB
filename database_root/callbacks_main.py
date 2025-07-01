@@ -125,10 +125,10 @@ def register_main_callbacks(app):
     )
     def bypass_call(n):
         if session.get('user') == 'guest':
-            return html.Span('This function is disabled for guest users', style = {'color': 'red'}), ntng()
+            return html.Span('This function is disabled for guest users', style = {'color': 'red'})
         
         if n == 0:
-            return '', ntng()
+            return ''
 
         try:
             session_cookie = request.cookies.get('session')
@@ -147,11 +147,11 @@ def register_main_callbacks(app):
                         style = {'position': 'absolute', 'opacity': 0, 'pointerEvents': 'none'}
                     ),
                     html.Span('Link auto-copied to clipboard.', style = {'color': 'green'})
-                ]), url
+                ])
             
             elif 'error' in resp_json:
-                return html.Span('Authentication error. Try re-logging in.', style={'color': 'red'}), ntng()
+                return html.Span('Authentication error. Try re-logging in.', style={'color': 'red'})
             else:
-                return html.Span(f'Failed to generate bypass: {response.text}', style = {'color': 'red'}), ntng()
+                return html.Span(f'Failed to generate bypass: {response.text}', style = {'color': 'red'})
         except Exception as e:
-            return html.Span(f'Request error: {e}', style = {'color': 'red'}), ntng()
+            return html.Span(f'Request error: {e}', style = {'color': 'red'})
