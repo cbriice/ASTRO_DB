@@ -2,20 +2,14 @@ import dash, os
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import backend_top as dbf
-from callbacks_main import register_main_callbacks
-from utils.constants import MAIN_MENU_OPS, MASTER_FILE, WHITELIST
-from callbacks_graphs import register_graph_callbacks
-from callbacks_uploaddata import register_upload_callbacks
-from callbacks_search import register_search_callbacks
-from callbacks_atts import register_att_callbacks
-from callbacks_analysis import register_analysis_callbacks
 from flask import Flask, session, redirect, url_for, request
 # type: ignore[import]
 from authlib.integrations.flask_client import OAuth # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
+from itsdangerous import URLSafeTimedSerializer
 
 #-------------------------- authentication system setup --------------------------------
-
+#normal authentication workflow
 server = Flask(__name__)
 server.wsgi_app = ProxyFix(server.wsgi_app, x_proto = 1, x_host = 1)
 server.secret_key = os.getenv("FLASK_SECRET_KEY")
@@ -96,7 +90,38 @@ def home():
         return redirect('/login')
     return app.index()
 
+#-------- ability to generate bypass key - user outside the org wants to access
+serializer = URLSafeTimedSerializer(server.secret_key)
+
+@server.route('/generate-bypass')
+def generate_bypass():
+    if 'user' not in session or not session['user'].endswith('@astroa.org'):
+        return "Unauthorized", 403
+    
+    payload = {'email': 'guest'}
+    token = serializer.dumps(payload)
+    bypass_url = f'https://astrodatabase.online/bypass-login/{token}'
+    return f'Bypass link (1 hour): {bypass_url}'
+
+@server.route('/bypass-login/<token>')
+def bypass_login(token):
+    try:
+        data = serializer.loads(token, max_age = 3600)
+        session['user'] = data['email']
+        print(f"External user {data['email']} logged in via bypass")
+        return redirect('/')
+    except Exception as e:
+        return redirect('/login?error=bypass_expired')
+
+
 #----------------------------- dash app setup ------------------------------------------
+from callbacks_main import register_main_callbacks
+from utils.constants import MAIN_MENU_OPS, MASTER_FILE, WHITELIST
+from callbacks_graphs import register_graph_callbacks
+from callbacks_uploaddata import register_upload_callbacks
+from callbacks_search import register_search_callbacks
+from callbacks_atts import register_att_callbacks
+from callbacks_analysis import register_analysis_callbacks
 
 app = dash.Dash(
     __name__, 

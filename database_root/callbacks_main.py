@@ -1,17 +1,16 @@
-import dash, base64, io
+import dash, requests
 from dash import dcc, html, Input, Output, State, ctx, ALL
-import dash_bootstrap_components as dbc
-import pandas as pd
-from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout
+from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout, admin_layout
 from backend_deep import add_data, add_group
 from utils.constants import MAIN_MENU_OPS
-from utils.helpers import ntng, get_keys, process_upload
+from utils.helpers import ntng, get_keys
 from layouts_graphinterface import graphmain_layout
 from layouts_uploaddata import uploaddata_layout
 from layouts_search import search_atts
 from layouts_atts import att_main
 from utils.constants import MASTER_FILE
 from layouts_analysis import analysis_main
+from flask import session
 
 def register_main_callbacks(app):
     @app.callback(
@@ -46,8 +45,11 @@ def register_main_callbacks(app):
         elif choice == MAIN_MENU_OPS[6]:                #upload machine data
             return uploadmachine_layout()
         
-        elif choice == MAIN_MENU_OPS[7]:
+        elif choice == MAIN_MENU_OPS[7]:                #analysis
             return analysis_main()
+        
+        elif choice == MAIN_MENU_OPS[8]:                #admin
+            return admin_layout()
         
         else:
             return "Idk what happened but we got here somehow"
@@ -62,7 +64,7 @@ def register_main_callbacks(app):
     )
     def handle_group_creation(n_clicks, path, name):
         if n_clicks == 0:
-            return "Click submit once you've finished typing shit in."
+            return ""
         if not path or not name:
             return html.Span("WARNING: File location and filename are required for group creation.", style = {'color': 'red'})
         
@@ -115,6 +117,27 @@ def register_main_callbacks(app):
         full_path = selected_values[-1]
         return '', full_path, full_path
 #--------------------------------------------------------------------------
+#under "admin" tab, allow admin user to generate a bypass link. block if guest user
+    @app.callback(
+        Output('bypass-link-output', 'children'),
+        Input('bypass-gen', 'n_clicks'),
+        prevent_initial_call = True
+    )
+    def bypass_call(n):
+        if session.get('user') == 'guest':
+            return html.Span('This function is disabled for guest users', style = {'color': 'red'})
+        
+        if n == 0:
+            return ''
 
-    
-#--------------------------------------------------------------------------
+        try:
+            response = requests.get('https://astrodatabase.online/generate-bypass', timeout = 5)
+            if response.status_code == 200:
+                return html.Div([
+                    html.Span('Bypass link (valid for 1 hour):'),
+                    html.A(response.text, href = response.text, target = '_blank')
+                ])
+            else:
+                return html.Span(f'Failed to generate bypass: {response.text}', style = {'color': 'red'})
+        except Exception as e:
+            return html.Span(f'Request error: {e}', style = {'color': 'red'})

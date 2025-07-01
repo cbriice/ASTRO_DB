@@ -146,3 +146,12 @@ def add_machine_atts(parent):
         html.Button('Add', id = 'add-machine-att', n_clicks = 0),
         html.Div(id = 'machine-att-add-status')
     ])
+#-----------------------------------
+
+def admin_layout():
+    return html.Div([
+        html.H4('Admin tools', style = {'text-align': 'center'}),
+        html.Br(),
+        html.Div(html.Button("Generate bypass link", id = 'bypass-gen', n_clicks = 0), style = {'padding-left': '800px'}), html.Br(),
+        html.Div(id = 'bypass-link-output')
+    ], style = {'padding-left': '50px', 'padding-right': '50px'})
