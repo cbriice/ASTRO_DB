@@ -142,6 +142,11 @@ def register_main_callbacks(app):
                 return html.Div([
                     html.Span('Bypass link (valid for 1 hour):'), html.Br(),
                     html.A(url, href = url, target = '_blank'), html.Br(),
+                    dcc.Clipboard(
+                        id = 'copy-bypass-link', 
+                        content = url, 
+                        style = {'position': 'absolute', 'opacity': 0, 'pointerEvents': 'none'}
+                    ),
                     html.Span('Link auto-copied to clipboard.', style = {'color': 'green'})
                 ]), url
             
