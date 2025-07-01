@@ -73,6 +73,9 @@ def logout():
 
 @server.before_request
 def restrict_access():
+    if request.path == '/' and session.get('user') == 'guest':
+        session.pop('user', None)       #clear cookies on reload to prevent blocked access to admin features if admin logs on as guest
+
     if 'user' not in session and request.endpoint not in WHITELIST:
         return redirect('/login')
     
