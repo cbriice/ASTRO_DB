@@ -119,8 +119,7 @@ def register_main_callbacks(app):
 #--------------------------------------------------------------------------
 #under "admin" tab, allow admin user to generate a bypass link. block if guest user
     @app.callback(
-        [Output('bypass-link-output', 'children'),
-         Output('copy-bypass-link', 'content')],
+        Output('bypass-link-output', 'children'),
         Input('bypass-gen', 'n_clicks'),
         prevent_initial_call = True
     )
