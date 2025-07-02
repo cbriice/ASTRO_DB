@@ -162,11 +162,16 @@ def conformance_comp(path1, path2, master_file):
         node = master[path1]
         node_atts = node.attrs.items()
         comp = master[path2]
-        comp_atts = comp.attrs.items()
 
         for key, val in node_atts:
-            if key in comp_atts:
-                percent_list.append((key, percent_diff(node.attrs[key], comp.attrs[key])))
+            if key in comp.attrs:
+                percent = percent_diff(node.attrs[key], comp.attrs[key])
+                if percent is not None:
+                    percent_list.append((key, percent))
+                else:
+                    percent_list.append((key, 'N/A'))
+            else:
+                print(f'Skipping {key}: not in comparison build')
 
     normalized_diff = magnitude(percent_list)
     return percent_list, normalized_diff

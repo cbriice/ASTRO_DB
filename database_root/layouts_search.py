@@ -146,12 +146,16 @@ def result_search(result, att):
         ])
         for res in sorted(result)]), html.Br(),
 
-        html.H6('Select results to show expanded details for:'),
+        html.H6('Select results to analyze:'),
         dcc.Checklist(
             id = 'att-result-checklist',
             options=[{'label': res.name, 'value': res.name} for res in sorted(result)],
             value=[]
         ), html.Br(),
-        html.Button('Show details', id = 'show-details-ssa', n_clicks = 0), html.Br(),
-        html.Div(id = 'expanded-results')
+        html.Button('Show details', id = 'show-details-ssa', n_clicks = 0, style = {'backgroundColor': "#84d1fd"}), 
+        html.Button('Save all for analysis', id = 'save-for-analysis', n_clicks = 0, style = {'backgroundColor': "#bc84fd"}),
+        html.Button('Set as benchmark for comparison', id = 'set-as-bm', n_clicks = 0, style = {'backgroundColor': "#d3fd84"}),
+        html.Br(),
+        html.Div(id = 'analysis-save-status'),
+        html.Div(id = 'expanded-results'),
     ], style = {'padding-bottom': '50px'})

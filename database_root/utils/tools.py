@@ -29,11 +29,6 @@ def returnMetric(ips_file)->pd.DataFrame:
         met_df['FeedPos'] = met_df['FeedPos'] *25.4 #in to mm
         return met_df
 
-def moving_average(data, window_size: int):
-    if window_size < 1:
-        raise ValueError("Window size must be a positive integer.")
-    return np.convolve(data, np.ones(window_size), 'valid') / window_size
-
 def scrub_file(file):
     confirm = input(f'WARNING: Calling this function will erase all data in {file}. Input "y" to continue: ')
     if confirm.lower() == 'y':
@@ -175,11 +170,26 @@ def process_data_for_preview(path, master_file):
 
 def percent_diff(num1, num2):
     if isinstance(num1, (int, float)) and isinstance(num2, (int, float)):
-        return ((num1 - num2) / num1) * 100
+        if (num1 == 0 and num2 != 0) or (num2 == 0 and num1 != 0):
+            diff = 100
+        elif num1 == num2 == 0:
+            diff = 0
+        else: 
+            diff = ((num2 - num1) / num1) * 100
+        return round(diff, 2)
+    
     else:
-        print(f'Skipping non-numerical attribute values [{num1}, {num2}]')
-        return 0
+        if num1 == num2:
+            return 'Same'
+        else:
+            return 'Different'
     
 def magnitude(vec):
-    return np.sqrt(sum(vec[i] * vec[i] for i in vec))
+    if isinstance(vec[0], tuple):
+        vals = [v for _, v in vec if isinstance(v, (int, float))]
+        mag = np.sqrt(sum(v * v for v in vals) / len(vals))
+        return round(mag, 3)
+    else:
+        mag = np.sqrt(sum(vec[i] * vec[i] for i in vec))
+        return round(mag, 3)
 

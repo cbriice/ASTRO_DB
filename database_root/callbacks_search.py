@@ -157,3 +157,26 @@ def register_search_callbacks(app):
         else:
             graph = ''
         return display_data_info(atts, data, graph)
+    
+    #logic to save shit for analysis tab
+    @app.callback(
+        [Output('analysis-save-status', 'children'),
+         Output('global-storage-1', 'data', allow_duplicate= True),
+         Output('global-storage-2', 'data', allow_duplicate= True)],
+        [Input('save-for-analysis', 'n_clicks'),
+         Input('set-as-bm', 'n_clicks')],
+        State('att-result-checklist', 'value'),
+        prevent_initial_call = True
+    )
+    def save_for_a(n1, n2, selected):
+        trigg = ctx.triggered_id
+        if n1 == n2 == 0:
+            return ntng(), ntng(), ntng()
+        
+        if trigg == 'save-for-analysis':
+            return html.Span('Selected data saved to global storage. Load in "Analyze data" tab.', style = {'color': 'green'}), ntng(), selected
+        elif trigg == 'set-as-bm':
+            if len(selected) > 1:
+                return html.Span('Cannot set >1 item as benchmark for comparison. Try "Save all for analysis" or select a single item', style = {'color': 'red'}), ntng(), ntng()
+            else:
+                return html.Span('Selected data set as benchmark for comparison. Load in "Analyze data" tab.', style = {'color': 'green'}), selected, ntng()

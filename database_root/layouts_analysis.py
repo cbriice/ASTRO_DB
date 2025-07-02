@@ -15,7 +15,7 @@ def analysis_main():
 
 def load_storage(path1, paths2):
     return html.Div([
-        html.H6('Reference data:'), 
+        html.H6('Benchmark data:'), 
         html.Ul([path1]), html.Br(),
         html.H6('Comparison data:'),
         html.Ul([html.Li(item) for item in paths2]), html.Br(),

@@ -46,12 +46,40 @@ def register_analysis_callbacks(app):
         State('global-storage-1', 'data'),
         State('global-storage-2', 'data')
     )
-    def analysis_2(n, store1, store2):
+    def analysis_2(n, stored1, store2):  #goes through list of items in store2 and compares attributes of each to item in store1. store1/2 are paths
+        if n == 0:
+            return ntng()
         key_diffs = []
         normalized_diffs = []
+        name_list = []
+        store1 = stored1[0]
+        name_1 = store1.split('/')[-1]
+
         for item in store2:
-            complist, normalized = conformance_comp(store1, store2, MASTER_FILE)
+            complist, normalized = conformance_comp(store1, item, MASTER_FILE)    #complist is list of (key, %diff) from comparison target (store1)
             key_diffs.append(complist)
             normalized_diffs.append(normalized)
+            name_list.append(item.split('/')[-1])
 
-        tables = [analysis_table(comp) for comp in complist]
+        tables = [analysis_table(comp, normalized_diffs[i]) for i, comp in enumerate(key_diffs)]
+        formatted_tables = [
+            html.Div([
+                html.Div([
+                    html.Label(f'[{name_1}] vs [{name_list[i]}]'), html.Br(),
+                    tables[i]
+                ]) for i in range(len(tables))  
+            ], style={
+                'display': 'flex',
+                'flexWrap': 'wrap',
+                'gap': '50px',
+                'justifyContent': 'center'
+            })
+]
+
+        return html.Div([
+            *formatted_tables, html.Br(),
+            html.Button("Analyze datasets", id = 'analyze-datasets-button', n_clicks = 0), html.Br(),
+            html.Div(id = 'analyze-datasets')
+        ])
+    #analysis - when user opens dataset up and explores items have program get min, max, avg values for specific data within dataset and display
+    #that for all datasets user analyzing. or something idk

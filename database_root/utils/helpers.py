@@ -199,14 +199,25 @@ def get_all_att_keys():
         master.visititems(collect_attrs)
     return sorted(att_keys)
 
-def analysis_table(comp_list):
+def analysis_table(comp_list, normalized_diff):
     table_rows = []
     for key, val in comp_list:
-        table_rows.append(html.Tr([html.Td(COLUMN_MAP_STANDARD.get(key, key)), html.Td(val)]))
+        table_rows.append(html.Tr([
+            html.Td(COLUMN_MAP_STANDARD.get(key, key), style = {'border': '1px solid black'}), 
+            html.Td(val, style = {'border': '1px solid black'})
+        ]))
+    table_rows.append(
+        html.Tr([
+            html.Td('Normalized difference:', style = {'fontWeight': 'bold', 'border': '1px solid black'}), 
+            html.Td(normalized_diff, style = {'fontWeight': 'bold', 'border': '1px solid black'})
+        ])
+    )
 
     return html.Table([
         html.Thead(
-            html.Tr([html.Th('Metric'), html.Th('% Difference')]),
+            html.Tr([html.Th('Metric'), html.Th('% Difference')])),
             html.Tbody(table_rows)
-        )
-    ])
+    ], style = {
+        'borderCollapse': 'collapse',
+        'border': '1px solid black'
+        })
