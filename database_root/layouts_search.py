@@ -157,5 +157,5 @@ def result_search(result, att):
         html.Button('Set as benchmark for comparison', id = 'set-as-bm', n_clicks = 0, style = {'backgroundColor': "#d3fd84"}),
         html.Br(),
         html.Div(id = 'analysis-save-status'),
-        html.Div(id = 'expanded-results'),
+        html.Div(id = 'expanded-results')
     ], style = {'padding-bottom': '50px'})
