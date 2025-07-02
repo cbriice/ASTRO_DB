@@ -7,8 +7,8 @@ from utils.constants import MASTER_FILE
 
 def creategroup_layout():
     return html.Div([
-        html.H4("Add a file anywhere", style = {'text-align': 'center'}), 
-        html.Label("[IMPORTANT] Input desired location for file separated by / (i.e. /builds/B1/data1/something/etc)"), html.Br(),
+        html.H4("Add a folder anywhere", style = {'text-align': 'center'}), 
+        html.Label("[IMPORTANT] Input desired location for group separated by / (i.e. /AAXXXX/builds/data1/something/etc)"), html.Br(),
 
         dcc.Input(
             id = 'created-path', 

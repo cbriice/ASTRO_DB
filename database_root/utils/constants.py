@@ -4,7 +4,7 @@ MASTER_FILE = 'master2.h5'
 
 MAIN_MENU_OPS = ['Browse database', 'Graph interface', 'Add attributes',
                 'Search specific attributes', 'Upload data',
-                'Create file (group)', 'Upload initial machine file', 'Analyze data', 'Admin']
+                'Create folder (group)', 'Upload initial machine file', 'Analyze data', 'Admin']
 
 COLUMN_MAP_STANDARD = {
     'SpinTrq': 'Spindle Torque (ft-lb)',

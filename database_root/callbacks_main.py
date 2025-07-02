@@ -66,7 +66,7 @@ def register_main_callbacks(app):
         if n_clicks == 0:
             return ""
         if not path or not name:
-            return html.Span("WARNING: File location and filename are required for group creation.", style = {'color': 'red'})
+            return html.Span("WARNING: Location and name are required for group creation.", style = {'color': 'red'})
         
         try:
             created_file_address = add_group(MASTER_FILE, path, name)
