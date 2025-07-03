@@ -20,7 +20,7 @@ def register_main_callbacks(app):
     def display_main_page(button_choice):                 #return of this function maps to outputs. callback inputs map to function argument in order
         trigg = ctx.triggered_id
         if not trigg:
-            return html.Span("Click a button to start.", style = {'text-align': 'center'})
+            return html.H6("Click a button to start.", style = {'text-align': 'center'})
         
         choice = MAIN_MENU_OPS[int(trigg['index'])]
         #print(choice)
