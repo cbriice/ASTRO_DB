@@ -13,7 +13,8 @@ def graphmain_layout():
             value = 'indiv'
         ),
         html.Button('Confirm', 'confirm-stacked', n_clicks = 0),
-        html.Div(id = 'graph-page-2')
+        html.Div(id = 'graph-page-2'),
+        dcc.Store(id = 'generated-plots', data = [], storage_type = 'memory')
     ],
         style = {'padding-left': '35px'}
     )
@@ -180,4 +181,11 @@ def graphmain_stacked():
         dcc.Store(id = 'stackers', data = [], storage_type = 'memory'),
         html.Button('Show graph', id = 'submit-stackers', n_clicks = 0),
         html.Div(id = 'stacked-plot')
+    ])
+
+def display_plots(plot_div):
+    return html.Div([
+        plot_div, html.Br(),
+        html.Button('Store for analysis', id = 'store-plot', n_clicks = 0), html.Br(), 
+        html.Div(id = 'store-plot-status'), html.Br()
     ])

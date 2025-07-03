@@ -204,7 +204,7 @@ def analysis_table(comp_list, normalized_diff):
     for key, val in comp_list:
         table_rows.append(html.Tr([
             html.Td(COLUMN_MAP_STANDARD.get(key, key), style = {'border': '1px solid black'}), 
-            html.Td(val, style = {'border': '1px solid black'})
+            html.Td(val, style = {'border': '1px solid black', 'text-align': 'right'})
         ]))
     table_rows.append(
         html.Tr([

@@ -1,13 +1,29 @@
 import dash, base64, io
 from dash import dcc, html, Input, Output, State, ctx, ALL
 from layouts_graphinterface import info_not_plotall, decide_plotall, graphmain_individual, info_plotall, show_plotall, dummy_decide_plotall, color_adjust 
-from layouts_graphinterface import graphmain_stacked
+from layouts_graphinterface import graphmain_stacked, display_plots
 from utils.helpers import ntng, get_keys, verify_existence, verify_stack, display_stack, generate_dset_list
 from utils.data_compiler import compile_plot, compile_stacked_plots
 from utils.tools import decode_color_att
 import plotly.graph_objects as go
 import utils.plot_tools as pt
 from utils.constants import MASTER_FILE
+
+def update_global(global_storage, stored_plots):
+    if not stored_plots:
+        return global_storage or []
+
+    global_copy = global_storage.copy() if global_storage else []
+
+    sources_existing = {item.get('source') for item in global_copy}
+
+    for item in stored_plots:
+        source = item.get('source')
+        if source and source not in sources_existing:
+            global_copy.append(item)
+            sources_existing.add(source)  #track as you go
+
+    return global_copy
 
 def register_graph_callbacks(app):
 
@@ -112,7 +128,10 @@ def register_graph_callbacks(app):
                     print(f'Skipping invalid plot for {name}: {type(plot)}')
                     continue
                 plot_dict[name] = dcc.Graph(id = f'plot{i}', figure = plot)
-                dict_to_store[name] = plot.to_dict()
+                dict_to_store[name] = {
+                    'figure': plot.to_dict(),
+                    'source': f'{name}'
+                }
             
             if not plots or not isinstance(plots, list):
                 print(f'No valid plots in {plots}')
@@ -120,22 +139,31 @@ def register_graph_callbacks(app):
             
             return show_plotall(plot_dict), dict_to_store
 
-    #show_plotall triggered by submit button, shows graphs from checklist
+    #show_plotall triggered by submit button, shows graphs from checklist --------------------------------
     @app.callback(
-        Output('pa-plot-output', 'children'),
+        [Output('pa-plot-output', 'children'),
+         Output('generated-plots', 'data', allow_duplicate= True)],
         Input('submit-pa-graph-choices', 'n_clicks'),
         State('pa-plot-list', 'data'),
-        State('pa-plot-selector', 'value')
+        State('pa-plot-selector', 'value'),
+        State('generated-plots', 'data'),
+        prevent_initial_call = True
     )
-    def show_pa_plots(n, plot_dict, selected_plots):
+    def show_pa_plots(n, plot_dict, selected_plots, stored_plots):
         if not plot_dict or not selected_plots:
-            return html.Span('No selection was made, nothing to display', style = {'color': 'gray'})
+            return html.Span('No selection was made, nothing to display', style = {'color': 'gray'}), ntng()
         
         graphs = []
+        active_plots = []
         for i, plt in enumerate(selected_plots):
             if plt in plot_dict:
-                fig = plot_dict[plt]
-                fig = go.Figure(fig) if isinstance(fig, dict) else fig
+                fig_data = plot_dict[plt]
+                if isinstance(fig_data, dict) and 'figure' in fig_data:
+                    fig = go.Figure(fig_data['figure']) if isinstance(fig_data['figure'], dict) else fig_data['figure']
+                    source = fig_data.get('source', 'Unknown')
+                else:
+                    fig = go.Figure(fig_data)
+                    source = 'Unknown'
                 graphs.append(
                     html.Div([
                         dcc.Graph(
@@ -144,23 +172,35 @@ def register_graph_callbacks(app):
                             style = {'width': '100%', 'maxWidth': 'none'}
                         )]
                     ))
-        return html.Div(graphs, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
+                #update generated-graphs with all plots user has generated. new ones every time user generates from checklist
+                active_plots.append({
+                    'figure': fig.to_dict(),
+                    'source': source
+                })
+                print(f'Processed plot for {source} (pa)')
+                plots_toupdate = update_global(stored_plots, active_plots) #confusing function name but its the same general logic so reused it
+
+        plot_div = html.Div(graphs, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
+        return display_plots(plot_div), plots_toupdate
 
     #---------------------------------- "plot single dataset" case
     #info_not_plotall
     @app.callback(
         [Output('npa-graph-output', 'children'),
          Output('color-axis-shit', 'children'),
-         Output('npa-stored-plots', 'data')],
+         Output('npa-stored-plots', 'data'),
+         Output('generated-plots', 'data', allow_duplicate= True)],
         Input('submit-ind-graph-data', 'n_clicks'),
         State('target-ind-npa', 'value'),
         State('graph-dim-npa', 'value'),
         State('metric-npa', 'value'),
-        State('graph-path', 'data')
+        State('graph-path', 'data'),
+        State('generated-plots', 'data'),
+        prevent_initial_call = True
     )
-    def these_names_dont_matter(n, target, dim, metric, path):
+    def these_names_dont_matter(n, target, dim, metric, path, stored_plots):
         if n == 0:
-            return html.Div(), html.Div(), None
+            return html.Div(), html.Div(), None, ntng()
         else:
             metric_b = True if metric == 'metric-true' else False
             plot = compile_plot(
@@ -176,26 +216,41 @@ def register_graph_callbacks(app):
                     plot = plot[0][1]
                 else:
                     print(f'[ERROR] Got multiple plots in single-plot path. {plot}')
-                    return html.Div("Invalid result: expected one plot", style = {'color': 'red'}), html.Div(), None
+                    return html.Div("Invalid result: expected one plot", style = {'color': 'red'}), html.Div(), None, ntng()
                 
             plot.update_layout(autosize = False, width = 1500, height = 800)
             graph = html.Div([dcc.Graph(id = f'plot-0', figure = plot)])
+
+            stored_copy = stored_plots.copy() if stored_plots else []
+            stored_copy.append({
+                'figure': plot.to_dict(),
+                'source': f'{target} ({dim}D)'
+            })
+            print(f'Processed {dim}D plot for {target} (npa)')
+
             if int(dim) == 2:
-                return html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'}), html.Div(), None
+                plot_div = html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
+                return display_plots(plot_div), html.Div(), None, stored_copy
+            
             else:
-                return html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'}), color_adjust(), plot
+                plot_div = html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
+                return display_plots(plot_div), color_adjust(), plot, stored_copy
 
     #color scale adjustment callback
     @app.callback(
-        Output('new-scale-3d-plot', 'children'),
+        [Output('new-scale-3d-plot', 'children'),
+         Output('generated-plots', 'data', allow_duplicate= True)],
         Input('submit-color-scale', 'n_clicks'),
         State('color-min', 'value'),
         State('color-max', 'value'),
-        State('npa-stored-plots', 'data')
+        State('npa-stored-plots', 'data'),
+        State('generated-plots', 'data'),
+        State('graph-path', 'data'),
+        prevent_initial_call = True
     )
-    def dddd(n, cmin, cmax, plot):
+    def dddd(n, cmin, cmax, plot, stored_plots, path):
         if n == 0:
-            return ""
+            return "", ntng()
         else:
             fig = decode_color_att(plot)
             for trace in fig.data:
@@ -204,11 +259,21 @@ def register_graph_callbacks(app):
                     trace.marker.cmax = cmax
             fig.update_layout(coloraxis = dict(cmin = cmin, cmax = cmax))
 
-            return html.Div([
+            plot_div = html.Div([
                 html.Br(),
                 html.H5('Adjusted graph'),
                 dcc.Graph(id = f'plot-1', figure = fig)
             ])
+
+            stored_copy = stored_plots.copy() if stored_plots else []
+            stored_copy = [item for item in stored_copy if path not in item.get('source', '')]
+
+            stored_copy.append({
+                'figure': fig.to_dict(),
+                'source': path
+            })
+
+            return display_plots(plot_div), stored_copy
 
     #------------------------------------------------------------------------------------------------------ stacked case
     #initial stacker page
@@ -243,13 +308,46 @@ def register_graph_callbacks(app):
     
 
     @app.callback(
-        Output('stacked-plot', 'children'),
+        [Output('stacked-plot', 'children'),
+         Output('generated-plots', 'data', allow_duplicate= True)],
         Input('submit-stackers', 'n_clicks'),
-        State('stackers', 'data')
+        State('stackers', 'data'),
+        State('generated-plots', 'data'),
+        prevent_initial_call = True
     )
-    def show_stack(n, stack):
+    def show_stack(n, stack, stored_plots):
         if n == 0:
-            return ""
+            return "", ntng()
         else:
             normalized_times = pt.normalize_times(stack)
-            return compile_stacked_plots(stack, normalized_times)
+            plots, fig = compile_stacked_plots(stack, normalized_times)
+            stored_copy = stored_plots.copy() if stored_plots else []
+            stack_string = f''
+            for s in stack:
+                stack_string = stack_string + f'{s} || '
+
+            stored_copy.append({
+                'figure': fig.to_dict(),
+                'source': stack_string
+            })
+            print(f'Processed stacked plot for {stack_string}')
+
+            return display_plots(plots), stored_copy
+        
+    #--------- send to storage
+    @app.callback(
+        [Output('global-graph-storage', 'data'),
+         Output('store-plot-status', 'children'),
+         Output('generated-plots', 'data', allow_duplicate= True)],
+        Input('store-plot', 'n_clicks'),
+        State('generated-plots', 'data'),
+        State('global-graph-storage', 'data'),
+        prevent_initial_call = True
+    )
+    def store_callback(n, stored_plots, global_storage):
+        if n == 0:
+            return ntng(), ntng(), ntng()
+        
+        global_copy = update_global(global_storage, stored_plots)
+            
+        return global_copy, html.Span('Plot stored globally. Load in "Analyze data" tab', style = {'color': 'green'}), []

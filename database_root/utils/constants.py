@@ -56,14 +56,14 @@ MACHINEFILE_HEADERS = ['SpinPwr', 'SpinTrq', 'SpinVel', 'SpinSP', 'FeedVel', 'Fe
 
 WHITELIST = ['login', 'auth_callback', 'static', 'healthcheck', 'generate_bypass']
 
-#------------------------------------------------------------------------------------------------------- attribute constants
+#------------------------------------------------------------------ attribute constants. dont even try to read or interpret this mess gang just trust me
 #for demo but mimicking real 
 X_OPS = [f'X{i}' for i in range(0, 7)]
 Y_OPS = [f'Y{i}' for i in range(0, 7)]
 Z_OPS = [f'Z{i}' for i in range(0, 7)]
 
 #categories for rigid attribute adding
-ATT_CATEGORIES_HIGHEST = ['Build', 'Exsitu', 'Other']
+ATT_CATEGORIES_HIGHEST = ['Build', 'Exsitu', 'Manually add']
 
 #---------build
 ATT_SUB_BUILD = ['Context', 'Build details', 'Parameters', 'Deflection/etc'] ###
@@ -75,14 +75,14 @@ BUILD_KEYS = [CONTEXT_K, BUILD_DETAILS_K, PARAMETERS_K, IDK]
 
 #---------exsitu
 ATT_SUB_EXSITU = ['Temper', 'Thermal Practice', 'Air Thermocouples', 'Load Thermocouples', 
-                  'Material Spec', 'Tensile', 'Fracture Toughness', 'Smooth Fatigue', 'PIP', 'Metallography']      #isnt this a beautiful block of code??
+                  'Material Spec', 'Tensile', 'Fracture Toughness', 'Smooth Fatigue', 'PIP', 'Metallography']      
 #above are categories, below are attribute keys to be entered into db
 TEMPER_K = ['temper']
 THERM_PRAC_K = ['heat_treat', 'age1', 'age2', 'age3', 'anneal', 'homogenization']
 AIR_TC_K = [f'ATC{i}' for i in range (0, 10)]
 LOAD_TC_K = [f'LTC{i}' for i in range (0, 10)]
 MAT_SPEC_K = [f'placeholder{i}' for i in range (0, 7)]      ###
-TENSILE_K = ['ultimate_d1', 'ultimate_d2', 'ultimate_d3'
+TENSILE_K = ['ultimate_d1', 'ultimate_d2', 'ultimate_d3',
              'yield_d1', 'yield_d2', 'yield_d3',
              'elongation_d1', 'elongation_d2', 'elongation_d3']
 FRAC_TOUGH_K = ['d1', 'd2', 'd3']                           ###         little d stands for "direction" idk what directions jacob was talking abt yet

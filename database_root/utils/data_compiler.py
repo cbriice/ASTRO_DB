@@ -137,11 +137,11 @@ def compile_stacked_plots(stacked_vars: list, normalized_times):
             
             fig.update_layout(default_layout())
             fig.update_layout(width = 1500, height = 800)
-            return dcc.Graph(figure = fig)
+            return dcc.Graph(figure = fig), fig
 
         except Exception as e:
             print(f'Something went wrong, check console. {e}')
-            return None
+            return None, None
 
 #compile attributes, information and send back in a format that can be interpreted by dash
 def compile_atts(path):

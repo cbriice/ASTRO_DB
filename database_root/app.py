@@ -1,3 +1,4 @@
+#carson was here
 import dash, os
 from dash import html, dcc
 import dash_bootstrap_components as dbc
@@ -155,7 +156,8 @@ def serve_layout():
         
         #global dcc.Store objects for saving/loading shit for comparison
         dcc.Store(id = 'global-storage-1', data = [], storage_type = 'memory'),
-        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory')     
+        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory'),
+        dcc.Store(id = 'global-graph-storage', data = [], storage_type = 'memory')     
 ])
 
 app.layout = serve_layout

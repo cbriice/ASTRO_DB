@@ -1,3 +1,5 @@
+#apptest.py - my locally ran database for testing db specific functionality. no server logic or anything
+
 import dash, os
 from dash import html, dcc
 import dash_bootstrap_components as dbc
@@ -11,7 +13,7 @@ from callbacks_atts import register_att_callbacks
 from callbacks_analysis import register_analysis_callbacks
 
 app = dash.Dash(__name__, external_stylesheets=[dbc.themes.BOOTSTRAP], suppress_callback_exceptions = True)
-app.title = 'ASTRO Database Interface'
+app.title = '[DEV] ASTRO Database Interface'
 
 server = app.server
 
@@ -33,7 +35,8 @@ app.layout = html.Div([
         
         #global dcc.Store objects for saving/loading shit for comparison
         dcc.Store(id = 'global-storage-1', data = [], storage_type = 'memory'),
-        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory')     
+        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory'),
+        dcc.Store(id = 'global-graph-storage', data = [], storage_type= 'memory')     
 ])
 #------------------------------------------------------------------------------------------
 register_main_callbacks(app)
