@@ -1,7 +1,6 @@
 import dash, base64, io
 from dash import dcc, html, Input, Output, State, ctx, ALL
-from layouts_graphinterface import info_not_plotall, decide_plotall, graphmain_individual, info_plotall, show_plotall, dummy_decide_plotall, color_adjust 
-from layouts_graphinterface import graphmain_stacked, display_plots
+import layouts_graphinterface as lgi
 from utils.helpers import ntng, get_keys, verify_existence, verify_stack, display_stack, generate_dset_list
 from utils.data_compiler import compile_plot, compile_stacked_plots
 from utils.tools import decode_color_att
@@ -38,9 +37,9 @@ def register_graph_callbacks(app):
             return ""
         else:
             if stacked == 'stacked':
-                return graphmain_stacked()
+                return lgi.graphmain_stacked()
             else:
-                return graphmain_individual()
+                return lgi.graphmain_individual()
    
    #---------------------------------------------------------------- not stacked case
    #graphmain_individual submit path here
@@ -62,8 +61,8 @@ def register_graph_callbacks(app):
                 if not ops:
                     n = path.split('/')[-1]
                     ops = {n: n}
-                    return ops, verification, path, dummy_decide_plotall()
-                return ops, verification, path, decide_plotall()
+                    return ops, verification, path, lgi.dummy_decide_plotall()
+                return ops, verification, path, lgi.decide_plotall()
             else:
                 return "", verification, "", ""
     
@@ -79,9 +78,9 @@ def register_graph_callbacks(app):
             return ntng()
         else:
             if to_plot == 'plot-single':
-                return info_not_plotall(target_ops)
+                return lgi.info_not_plotall(target_ops)
             else:
-                return info_plotall()
+                return lgi.info_plotall()
     
     #dummy options to make thing idiot proof
     @app.callback(
@@ -93,7 +92,7 @@ def register_graph_callbacks(app):
         if n == 0:
             return ""
         else:
-            return info_not_plotall(target_ops)
+            return lgi.info_not_plotall(target_ops)
     
     #------------------------------------ "plot all from dataset" case
     #info_plotall
@@ -137,7 +136,7 @@ def register_graph_callbacks(app):
                 print(f'No valid plots in {plots}')
                 return "", {}
             
-            return show_plotall(plot_dict), dict_to_store
+            return lgi.show_plotall(plot_dict), dict_to_store
 
     #show_plotall triggered by submit button, shows graphs from checklist --------------------------------
     @app.callback(
@@ -181,7 +180,7 @@ def register_graph_callbacks(app):
                 plots_toupdate = update_global(stored_plots, active_plots) #confusing function name but its the same general logic so reused it
 
         plot_div = html.Div(graphs, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
-        return display_plots(plot_div), plots_toupdate
+        return lgi.display_plots(plot_div), plots_toupdate
 
     #---------------------------------- "plot single dataset" case
     #info_not_plotall
@@ -230,11 +229,11 @@ def register_graph_callbacks(app):
 
             if int(dim) == 2:
                 plot_div = html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
-                return display_plots(plot_div), html.Div(), None, stored_copy
+                return lgi.display_plots(plot_div), html.Div(), None, stored_copy
             
             else:
                 plot_div = html.Div(graph, style = {'display': 'grid', 'gridTemplateColumns': '1fr 1fr'})
-                return display_plots(plot_div), color_adjust(), plot, stored_copy
+                return lgi.display_plots(plot_div), lgi.color_adjust(), plot, stored_copy
 
     #color scale adjustment callback
     @app.callback(
@@ -273,7 +272,7 @@ def register_graph_callbacks(app):
                 'source': path
             })
 
-            return display_plots(plot_div), stored_copy
+            return lgi.display_plots(plot_div), stored_copy
 
     #------------------------------------------------------------------------------------------------------ stacked case
     #initial stacker page
@@ -332,7 +331,7 @@ def register_graph_callbacks(app):
             })
             print(f'Processed stacked plot for {stack_string}')
 
-            return display_plots(plots), stored_copy
+            return lgi.display_plots(plots), stored_copy
         
     #--------- send to storage
     @app.callback(
