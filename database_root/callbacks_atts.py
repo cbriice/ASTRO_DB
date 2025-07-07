@@ -49,7 +49,10 @@ def register_att_callbacks(app):
             return enter_any()
         for i in range(len(ATT_CATEGORIES_HIGHEST)):
             if category == ATT_CATEGORIES_HIGHEST[i]:
-                return att_dropdown(ALL_ATT_SUBCATEGORIES[i], 'subcategory')
+                if category != 'Manually add':
+                    return att_dropdown(ALL_ATT_SUBCATEGORIES[i], 'subcategory')
+                else:
+                    return enter_any()
             
     @app.callback(
         Output('next-next-att-dropdown', 'children'),
