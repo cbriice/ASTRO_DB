@@ -149,9 +149,9 @@ def get_stats(userfile: pd.DataFrame, mets, csv_path) -> dict:
     stats = {}
     for met in mets:
         if met in userfile.columns:
-            stats[f'{met}_max'] = float(userfile[met].max())
-            stats[f'{met}_min'] = float(userfile[met].min())
-            stats[f'{met}_avg'] = float(userfile[met].mean())
+            stats[f'{met}_max'] = int(round(float(userfile[met].max()), 0))
+            stats[f'{met}_min'] = int(round(float(userfile[met].min()), 0))
+            stats[f'{met}_avg'] = int(round(float(userfile[met].mean()), 0))
         else:
             print(f'Warning: {met} not found in userfile columns. Skipping.')
     if csv_path:

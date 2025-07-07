@@ -154,7 +154,7 @@ def compile_atts(path):
                 name = MASTER_FILE
             else:
                 name = path.split('/')[-1]
-            atts = [f'{key}: {round(val, 2) if isinstance(val, float) else val}' for key, val in node.attrs.items()]
+            atts = [f'{key}: {int(round(val, 0)) if isinstance(val, float) else val}' for key, val in node.attrs.items()]
             #print(atts)
             
             return html.Div([
