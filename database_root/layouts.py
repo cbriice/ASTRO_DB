@@ -75,7 +75,7 @@ def display_data_info(formatted_atts, stored_data, graph):
             html.Div(graph, style = {'display': 'inline-block'})
             ], style = {'display': 'flex', 'justifyContent': 'space-between'}),
         html.Br()
-    ])
+    ], style = {'padding-bottom': '75px'})
 
 #-------------------------------- upload initial machine file layouts
 def uploadmachine_layout():

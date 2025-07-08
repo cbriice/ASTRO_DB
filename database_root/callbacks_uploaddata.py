@@ -1,9 +1,8 @@
 import os, io, base64, pandas as pd
 from dash import dcc, html, Input, Output, State, ctx
 from utils.helpers import ntng, process_upload, auto_assign_atts
-from backend_deep import add_data, add_attrs
-from layouts_uploaddata import attribute_layout1, attribute_layout2, attribute_layout3, builddata_upload_layout, exsitu_upload_layout, exsitu_coordupload_layout 
-from layouts_uploaddata import exsitu_other, upload_file_section
+from backend_deep import add_data, add_attrs, process_exsitu, add_exsitu
+import layouts_uploaddata as lud
 from layouts import add_machine_atts
 from utils.tools import find_header_line
 import backend_top as bt
@@ -20,9 +19,11 @@ def register_upload_callbacks(app):
             return ''
         else:
             if data_type == 'build':
-                return builddata_upload_layout()
+                return lud.builddata_upload_layout()
+            elif data_type == 'exsitu':
+                return lud.exsitu_upload_layout()
             else:
-                return exsitu_upload_layout()
+                return lud.exsitu_csv_1()
         
     #------------------------------------------------- above handles choice of data, below is where shit is uploaded
     #for builds not exsitu
@@ -50,7 +51,7 @@ def register_upload_callbacks(app):
                 if ' ' in name:
                     return html.Span(f'Invalid name {name}', style = {'color': 'red'}), ntng(), ntng(), ntng()
                 
-                return upload_file_section(1), parent_path, name, 'build'
+                return lud.upload_file_section(1), parent_path, name, 'build'
             
     @app.callback(
         [Output('upload-status-1', 'children'),
@@ -76,7 +77,7 @@ def register_upload_callbacks(app):
             try:
                 success = add_data(data, MASTER_FILE, parent_path, name, False)
                 if success:
-                    return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}', style={'color': 'green'}), attribute_layout1(), f'{parent_path}/{name}'
+                    return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
                 else:
                     return html.Span(f'Failed to add {name} to {parent_path}. Check console for what happened', style={'color': 'red'}), '', ntng()
             except Exception as e:
@@ -93,9 +94,9 @@ def register_upload_callbacks(app):
             return ''
         else:
             if coords == 'yes':
-                return exsitu_coordupload_layout()
+                return lud.exsitu_coordupload_layout()
             else:
-                return exsitu_other()
+                return lud.exsitu_other()
             
     @app.callback( #coords case
         [Output('exsitu-coord-page2', 'children'),
@@ -117,7 +118,7 @@ def register_upload_callbacks(app):
             return ntng(), ntng(), ntng(), ntng(), ntng()
         else:
             address = f'/{alloy}/exsitu/{xcoord}{ycoord}{zcoord}/{dt}'
-            return upload_file_section(2), address, name, html.Span(f'Generated address {address}. Name: {name}', style = {'color': 'green'}), 'exsitu-coord'
+            return lud.upload_file_section(2), address, name, html.Span(f'Generated address {address}. Name: {name}', style = {'color': 'green'}), 'exsitu-coord'
 
     @app.callback(
         [Output('upload-status-2', 'children'),
@@ -143,7 +144,7 @@ def register_upload_callbacks(app):
             try:
                 success = add_data(data, MASTER_FILE, parent_path, name, False)
                 if success:
-                    return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}', style={'color': 'green'}), attribute_layout1(), f'{parent_path}/{name}'
+                    return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
                 else:
                     return html.Span(f'Failed to add {name} to {parent_path}. Check console for what happened', style={'color': 'red'}), '', ntng()
             except Exception as e:
@@ -166,7 +167,7 @@ def register_upload_callbacks(app):
             return ntng(), ntng(), ntng(), ntng(), ntng()
         else:
             address = f'/{alloy}/exsitu/{dt}'
-            return upload_file_section(3), html.Span(f'Generated address {address}. Name: {name}', style = {'color': 'green'}), address, name, 'exsitu-noncoord'
+            return lud.upload_file_section(3), html.Span(f'Generated address {address}. Name: {name}', style = {'color': 'green'}), address, name, 'exsitu-noncoord'
 
     @app.callback(
         [Output('upload-status-3', 'children'),
@@ -180,6 +181,37 @@ def register_upload_callbacks(app):
     )
     def nah(n, contents, filename, parent_path, name):
         return exsitu_callback(n, contents, filename, parent_path, name) #same process as for coords case after data is taken in
+    
+    #---------------exsitu auto-processed csv ---------------
+    @app.callback(
+        Output('upload-status-37', 'children'),
+        [Input('submit-upload-37', 'n_clicks'),
+         Input('upload-data-37', 'contents')],
+        State('upload-data-37', 'filename')
+    )
+    def exsitu_auto(n, contents, filename):
+        if n == 0 and not contents:
+            return ''
+        elif n == 0 and contents:
+            return html.Span(f'Received {filename}', style = {'color': 'green'})
+        elif n > 0 and not contents:
+            return html.Span('No file uploaded', style = {'color': 'red'})
+        
+        else:
+            data = process_upload(contents, None)
+            df_list, atts = process_exsitu(data)
+            success = add_exsitu(df_list, atts, MASTER_FILE)
+
+            if success:
+                return html.Span(
+                    f'{filename} automatically processed and saved under "ex-situ" top-level group according to build id and temper.', 
+                    style = {'color': 'green'}
+                )
+            else:
+                return html.Span(
+                    'One or more datasets threw an error. Check console for specific log - some datasets may still have been processed successfully.',
+                    style = {'color': 'red'}
+                )
 
     #--------------------------------------------
     #-------------------------------------------- atts
@@ -214,7 +246,7 @@ def register_upload_callbacks(app):
             else:
                 return html.Span('Attribute assigning failed, check console.', style = {'color': 'red'})
         else:
-            return attribute_layout2(parent, path)
+            return lud.attribute_layout2(parent, path)
     
     #aadsasddassfd 
     @app.callback(
@@ -243,9 +275,9 @@ def register_upload_callbacks(app):
             return ntng(), ntng()
         else:
             if manual_choice == 'parent':
-                return attribute_layout3(), parent
+                return lud.attribute_layout3(), parent
             else:
-                return attribute_layout3(), path
+                return lud.attribute_layout3(), path
 
     #add shit manually bor
     @app.callback(

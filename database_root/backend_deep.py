@@ -4,9 +4,10 @@ import h5rdmtoolbox as h5tbx
 import pandas as pd
 from utils.helpers import save_df
 import numpy as np
-import json, pickle, utils.tools, h5py
-from dash import html
+import json, pickle, h5py
 from utils.lock import master_lock
+from utils.tools import find_adjacent, find_index
+from utils.constants import MAT_TESTING_TABLES
 
 #this function might not be useful considering i have require_group lines in all of add_data to make sure no errors happen but ima leave it here anyways
 def add_group(master_file, parent_path: str, name: str) -> str: 
@@ -21,6 +22,7 @@ def add_group(master_file, parent_path: str, name: str) -> str:
     return path
 
 #should be able to handle all kinds of data and add them at any address specified by the user
+#ngl half of this function is probably useless but its one of the first things i coded and i was given no direction so fuck it
 def add_data(data, master_file, parent_path, name, data_isfilename: bool) -> bool:  #returns bool which indicates success of adding data
     path = f'{parent_path}/{name}'
     
@@ -81,6 +83,10 @@ def add_data(data, master_file, parent_path, name, data_isfilename: bool) -> boo
                     dt = h5py.string_dtype(encoding='utf-8')
                     with master_lock:
                         with h5tbx.File(master_file, 'a') as master:
+                            ds_path = f'{parent_path}/{name}'
+                            if ds_path in master:
+                                print(f'{ds_path} already exists in database. Overwriting existing data. Hopefully this isnt accidental lol')
+                                del master[ds_path]
                             g = master.require_group(parent_path)
                             g.create_dataset(name, data = j, dtype = dt)
                             print(f'Saved data (JSON) to {path}')
@@ -108,6 +114,15 @@ def add_data(data, master_file, parent_path, name, data_isfilename: bool) -> boo
                 
             #array
             elif isinstance(data, np.ndarray):
+                #handle exsitu csv processing logic separately
+                if data.dtype == object and data.ndim == 2 and data.shape[1] == 2:
+                    try:
+                        d = {str(k): v for k, v in data}
+                        return add_data(d, master_file, parent_path, name, False)
+                    except Exception as e:
+                        print(f'Could not convert (key, value) ndarray to dict: {e}')
+                        return False
+                #normal logic
                 arr = np.array(data)
                 if arr.dtype == 'object':
                     serialized = json.dumps(data)
@@ -199,3 +214,102 @@ def get_data(path, master_file):
             print(f"Unrecognized object type at {path}: {type(node)}")
             return []
     
+#goal here: store each row as a dataset under the folder defined by coordinates, name is Build Name. alloy, build/test temper, test dir are default atts
+#--------these functions are going to be hardcoded as shit to template so if formatting changes for exsitu csvs this will have to change too-----------
+def process_exsitu(df):
+    if not isinstance(df, pd.DataFrame):
+        print(f'idk how u fucked this up but {type(df)} shouldve been a dataframe from process_upload()')
+        return False
+    
+    #assuming all of these values are in csv like [Build Name | Name] where | separates two columns in the same row. these values are for atts
+    atts_dict = {}
+    build_name = find_adjacent(df, 'Build ID') or find_adjacent(df, 'Build Name')
+    atts_dict.update({'build_id': build_name})
+    alloy = find_adjacent(df, 'Build Alloy') or find_adjacent(df, 'Alloy')
+    if 'AA' not in alloy:
+        alloy = 'AA' + alloy
+    atts_dict.update({'build_alloy': alloy})
+    build_temper = find_adjacent(df, 'Build Temper')
+    atts_dict.update({'build_temper': build_temper})
+    test_temper = find_adjacent(df, 'Test Temper')
+    atts_dict.update({'test_temper': test_temper})
+
+    #separate file into sub-dataframes for each test table in template
+    df_list = []
+    for title in MAT_TESTING_TABLES:
+        row_start, col_start = find_index(df, title)
+        header_row = row_start + 1   #shift down one to exclude title cell in trimmed df
+        data_start = header_row + 1  #data starts here
+        new_cols = df.iloc[header_row, col_start:].values   #get table headers and assign as cols of trimmed df
+        trimmed_df = df.iloc[data_start:, col_start:]
+        trimmed_df.columns = new_cols
+
+        valid_rows_mask = trimmed_df.notna().any(axis = 1)
+        row_end = row_start + valid_rows_mask.idxmin() if not valid_rows_mask.all() else len(df)
+
+        valid_cols_mask = trimmed_df.notna().any(axis = 0)
+        if not valid_cols_mask.all():
+            first_blank_col_label = valid_cols_mask.idxmin()
+            first_blank_col_index = trimmed_df.columns.get_loc(first_blank_col_label)
+            col_end = col_start + first_blank_col_index
+        else:
+            col_end = len(df.columns)           #too scared to get rid of this code even tho its not used bc i just got it to work smh
+
+        final_trim = trimmed_df.iloc[:row_end - trimmed_df.index[0], :valid_cols_mask.sum()]
+        df_list.append((title, final_trim))
+    
+    return df_list, atts_dict
+
+#then this function gets called and cycles through for each df stored in df list
+def add_exsitu(df_list, atts: dict, master_file):
+    status_tracker = []
+    status_tracker_atts = []
+    illegal = ['Test direction', 'Test number']
+
+    for (title, df) in df_list:
+        #cycle through each row and create a dataset to be processed using add_data() 
+        for r, _ in df.iterrows():
+            if r == 1:
+                continue
+            values = []
+            for col in df.columns:
+                val = df.loc[r, col]          #access cell at row number r, column name col
+                values.append((col, val))
+            arr = np.array(values, dtype = object)      #get 2 column array
+
+            #first 3 values of table should be coordinates
+            _, x = values[0]
+            _, y = values[1]
+            _, z = values[2]
+            coords = f'{x}-{y}-{z}'
+            if 'nan' in coords:
+                continue        #im not abt to figure out why pandas grabs nan rows but i can just skip them lol
+            #columns [3] and [4] should always be test direction and test number according to template
+            _, test_dir = values[3]
+            _, test_num = values[4]
+            name = f'{test_dir}-{test_num}'
+            if any(il.strip().lower() in name.strip().lower() for il in illegal):
+                continue        #skip if program grabs table headers instead of actual data (once again idk why it does but i can catch it)
+            
+            atts.update({'coordinates': coords})
+            new_title = title.replace(' ', '-')
+            build_info = f"{atts['build_id']}-{atts['build_temper']}"
+            address = f"/{atts['build_alloy']}/ex-situ/{new_title}/{build_info}"
+            full_path = f'{address}/{name}'
+
+            #add each 2 column array to database and tag all with the same atts derived from original uploaded file
+            success = add_data(arr, master_file, address, name, False)
+            atts_success = add_attrs(master_file, full_path, atts)
+
+            status_tracker.append(success)
+            status_tracker_atts.append(atts_success)
+    
+    if False in status_tracker:
+        return False
+    
+    if False in status_tracker_atts:
+        return False
+
+    return True
+    
+        

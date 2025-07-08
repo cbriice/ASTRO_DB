@@ -40,7 +40,7 @@ def merge_build_to_master(master_file, alloy: str, build_id:str, build_file, met
     if metadata is None:
         raise ValueError('WARNING: Each build should have metadata associated with it.')
     
-    metadata.update({'id': build_id})      #give every build an attribute with its id for search purposes
+    metadata.update({'build_id': build_id})      #give every build an attribute with its id for search purposes
     metadata.update({'alloy': alloy})
 
     with master_lock:

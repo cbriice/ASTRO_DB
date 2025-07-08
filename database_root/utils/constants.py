@@ -56,6 +56,8 @@ MACHINEFILE_HEADERS = ['SpinPwr', 'SpinTrq', 'SpinVel', 'SpinSP', 'FeedVel', 'Fe
 
 WHITELIST = ['login', 'auth_callback', 'static', 'healthcheck', 'generate_bypass']
 
+MAT_TESTING_TABLES = ['Tension Test Data', 'Fracture Toughness Results', 'Smooth Fatigue Results']
+
 #------------------------------------------------------------------ attribute constants. dont even try to read or interpret this mess gang just trust me
 #for demo but mimicking real 
 X_OPS = [f'X{i}' for i in range(0, 7)]

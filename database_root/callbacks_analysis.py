@@ -21,26 +21,28 @@ def register_analysis_callbacks(app):
     @app.callback(
         [Output('analysis-2', 'children'),
          Output('global-storage-1', 'data'),
-         Output('global-storage-2', 'data')],
+         Output('global-storage-2', 'data'),
+         Output('global-graph-storage', 'data', allow_duplicate= True)],
         [Input('load-storage', 'n_clicks'),
          Input('clear-storage', 'n_clicks')],
         State('global-storage-1', 'data'),
         State('global-storage-2', 'data'),
-        State('global-graph-storage', 'data')
+        State('global-graph-storage', 'data'),
+        prevent_initial_call = True
     )
     def analysis_1(n1, n2, store1, store2, stored_plots):             #store1 is one path, store2 is a list of paths
         trigg = ctx.triggered_id
         if trigg is None or (n1 == 0 and n2 == 0):
-            return ntng(), ntng(), ntng()
+            return '', ntng(), ntng(), ntng()
         
         if trigg == 'clear-storage':
-            return html.Span('Storage cleared. Load data to analyze from search tab.'), None, []
+            return html.Span('Storage cleared. Load data to analyze from search tab.'), None, [], []
         
         elif trigg == 'load-storage':
             if (store1 and store2) or stored_plots:
-                return load_storage(store1, store2, stored_plots), ntng(), ntng()
+                return load_storage(store1, store2, stored_plots), ntng(), ntng(), ntng()
             else:
-                return html.Span(f'Error: not enough data to load. 1: {store1} | 2: {store2} | 3: {stored_plots}'), ntng(), ntng()
+                return html.Span(f'Error: not enough data to load. 1: {store1} | 2: {store2} | 3: {stored_plots}'), ntng(), ntng(), ntng()
 
     @app.callback(
         Output('analysis-3', 'children'),
@@ -50,7 +52,7 @@ def register_analysis_callbacks(app):
     )
     def analysis_2(n, stored1, store2):  #goes through list of items in store2 and compares attributes of each to item in store1. store1/2 are paths
         if n == 0:
-            return ntng()
+            return ''
         
         if stored1 and store2:
             key_diffs = []
@@ -98,7 +100,7 @@ def register_analysis_callbacks(app):
     )
     def load_plots(n, global_plot_data):
         if n == 0:
-            return ntng()
+            return ''
         
         if not global_plot_data:
             return html.Span('No plots stored.')

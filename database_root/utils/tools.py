@@ -1,5 +1,5 @@
 import numpy as np, pandas as pd
-import base64, h5py, io
+import base64, h5py, io, json
 import h5rdmtoolbox as h5tbx
 import plotly.graph_objects as go
 from dash import html, dash_table
@@ -162,6 +162,27 @@ def process_data_for_preview(path, master_file):
                     else:
                         return '', False
 
+                elif isinstance(data, str):
+                    try:
+                        parsed = json.loads(data)
+
+                        if isinstance(parsed, dict):
+                            df = pd.DataFrame([parsed])
+                        elif isinstance(parsed, list) and all(isinstance(row, dict) for row in parsed):
+                            df = pd.DataFrame(parsed)
+                        else:
+                            return html.Span(f'JSON parsed but format not displayable as a table.\n\n{parsed}'), False
+                        
+                        return dash_table.DataTable(
+                            data = df.to_dict('records'),
+                            columns = [{'name': c, 'id': c} for c in df.columns],
+                            style_table = {'maxHeight': '500px', 'overflowY': 'auto', 'width': '1300px', 'overflowX': 'auto'},
+                            page_size = 10
+                        ), False
+                    
+                    except json.JSONDecodeError as e:
+                        return html.Span(f'Failed to parse JSON: {e}'), False
+
                 else:
                     return html.Span(f'Unsupported data type for preview: {type(data)}', style = {'color': 'red'}), False
         else:
@@ -176,7 +197,7 @@ def percent_diff(num1, num2):
             diff = 0
         else: 
             diff = ((num2 - num1) / num1) * 100
-        return round(diff, 2)
+        return round(diff, 1)
     
     else:
         if num1 == num2:
@@ -188,8 +209,33 @@ def magnitude(vec):
     if isinstance(vec[0], tuple):
         vals = [v for _, v in vec if isinstance(v, (int, float))]
         mag = np.sqrt(sum(v * v for v in vals) / len(vals))
-        return round(mag, 3)
+        return round(mag, 1)
     else:
         mag = np.sqrt(sum(vec[i] * vec[i] for i in vec))
-        return round(mag, 3)
+        return round(mag, 1)
 
+def find_index(df: pd.DataFrame, target):
+    if isinstance(target, list):            #idt this case ever gets called ngl
+        for i, row in df.iterrows():
+            row_arr = row.values
+            for tar in target:
+                if tar in row_arr:
+                    return i, np.where(row_arr == tar)[0][0]
+    else:
+        for i, row in df.iterrows():
+            row_arr = row.values
+            cleaned_arr = [str(val).strip().lower() for val in row_arr]
+            cleaned_target = str(target).strip().lower()
+            if cleaned_target in cleaned_arr:
+                return i, cleaned_arr.index(cleaned_target)
+            
+def find_adjacent(df: pd.DataFrame, target: str):
+    for _, row in df.iterrows():
+        for i, val in enumerate(row):
+            if pd.isna(val):
+                continue
+            if str(val).strip().lower() == str(target).strip().lower():
+                if i + 1 < len(row):
+                    return row.iloc[i + 1]
+    print(f'{target} not found in any row of dataframe')
+    return None

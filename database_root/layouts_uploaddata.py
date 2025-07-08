@@ -15,13 +15,15 @@ def uploaddata_layout():
             html.H6('Ex-situ or build data?'),
             dcc.RadioItems(
                 id = 'data-type',
-                options = [{'label': 'Ex-situ data', 'value': 'exsitu'},
-                        {'label': 'Build data', 'value': 'build'}]
+                options = [{'label': 'Build data', 'value': 'build'},
+                        {'label': 'Ex-situ data (csv, bulk)', 'value': 'exsitu-csv'},
+                        {'label': 'Ex-situ data (individual)', 'value': 'exsitu'}]
             ),
             html.Button('Confirm', id = 'ex-bd-button', n_clicks = 0), html.Br(),
             html.Div(id = 'upload-builddata-info'),
         ], style = {'padding-left': '300px', 'padding-bottom': '35px'}),
         
+        #just dont even worry about all this shit fr it works n thats all u need to know
         dcc.Store(id ='parent-path-1', storage_type = 'memory'),
         dcc.Store(id = 'name-upload-1', storage_type = 'memory'),
         dcc.Store(id = 'parent-path-2', storage_type = 'memory'),
@@ -175,6 +177,14 @@ def exsitu_other():
         html.Button('Generate address', id = 'submit-exsitu-data', n_clicks = 0), html.Br(),
         html.Div(id = 'other-gen-status'), html.Br(),
         html.Div(id = 'exsitu-attribute-adder')
+    ])
+
+def exsitu_csv_1():
+    return html.Div([
+        html.Br(),
+        html.H6('Upload ex-situ CSV'),
+        html.Label('Note: Attributes and location for this data will be automatically processed. Make sure file formatting is standardized.'), html.Br(), html.Br(),
+        upload_file_section(37)
     ])
 
 #-------------------------- attribute layouts
