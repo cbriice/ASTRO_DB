@@ -27,28 +27,28 @@ def register_main_callbacks(app):
         if choice == MAIN_MENU_OPS[0]:                  #browse dir
             return browsedb_layout()
         
-        elif choice == MAIN_MENU_OPS[1]:                #graph interface
-            return graphmain_layout()
-        
-        elif choice == MAIN_MENU_OPS[2]:                #filter by att
-            return att_main()
-        
-        elif choice == MAIN_MENU_OPS[3]:                #search spec att
-            return search_atts()
-        
-        elif choice == MAIN_MENU_OPS[4]:                #upload data
-            return uploaddata_layout()
-        
-        elif choice == MAIN_MENU_OPS[5]:                #create group
-            return creategroup_layout()
-        
-        elif choice == MAIN_MENU_OPS[6]:                #upload machine data
+        elif choice == MAIN_MENU_OPS[1]:               
             return uploadmachine_layout()
         
-        elif choice == MAIN_MENU_OPS[7]:                #analysis
+        elif choice == MAIN_MENU_OPS[2]:                
+            return uploaddata_layout()
+        
+        elif choice == MAIN_MENU_OPS[3]:                
+            return att_main()
+        
+        elif choice == MAIN_MENU_OPS[4]:                
+            return creategroup_layout()
+        
+        elif choice == MAIN_MENU_OPS[5]:               
+            return search_atts()
+        
+        elif choice == MAIN_MENU_OPS[6]:                
+            return graphmain_layout()
+        
+        elif choice == MAIN_MENU_OPS[7]:                
             return analysis_main()
         
-        elif choice == MAIN_MENU_OPS[8]:                #admin
+        elif choice == MAIN_MENU_OPS[8]:                
             return admin_layout()
         
         else:
