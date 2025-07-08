@@ -1,6 +1,6 @@
-import dash, requests
+import dash, requests, h5py
 from dash import dcc, html, Input, Output, State, ctx, ALL
-from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout, admin_layout
+from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout, admin_layout, edit_db_layout, del_or_move
 from backend_deep import add_data, add_group
 from utils.constants import MAIN_MENU_OPS
 from utils.helpers import ntng, get_keys
@@ -11,50 +11,57 @@ from layouts_atts import att_main
 from utils.constants import MASTER_FILE
 from layouts_analysis import analysis_main
 from flask import session, request
+from utils.lock import master_lock
+import h5rdmtoolbox as h5tbx
 
 def register_main_callbacks(app):
     @app.callback(
     Output('main-content', 'children'),
     Input({'type': 'program-option', 'index': dash.ALL}, 'n_clicks')
     )
-    def display_main_page(button_choice):                 #return of this function maps to outputs. callback inputs map to function argument in order
+    def display_main_page(button_choice):                 
         trigg = ctx.triggered_id
         if not trigg:
             return html.H6("Click a button to start.", style = {'text-align': 'center'})
         
         choice = MAIN_MENU_OPS[int(trigg['index'])]
         #print(choice)
-        if choice == MAIN_MENU_OPS[0]:                  #browse dir
-            return browsedb_layout()
-        
-        elif choice == MAIN_MENU_OPS[1]:               
-            return uploadmachine_layout()
-        
-        elif choice == MAIN_MENU_OPS[2]:                
-            return uploaddata_layout()
-        
-        elif choice == MAIN_MENU_OPS[3]:                
-            return att_main()
-        
-        elif choice == MAIN_MENU_OPS[4]:                
-            return creategroup_layout()
-        
-        elif choice == MAIN_MENU_OPS[5]:               
-            return search_atts()
-        
-        elif choice == MAIN_MENU_OPS[6]:                
-            return graphmain_layout()
-        
-        elif choice == MAIN_MENU_OPS[7]:                
-            return analysis_main()
-        
-        elif choice == MAIN_MENU_OPS[8]:                
-            return admin_layout()
+        if choice == MAIN_MENU_OPS[0]: return browsedb_layout()
+
+        elif choice == MAIN_MENU_OPS[1]: return uploadmachine_layout()
+
+        elif choice == MAIN_MENU_OPS[2]: return uploaddata_layout()
+
+        elif choice == MAIN_MENU_OPS[3]: return att_main()
+
+        elif choice == MAIN_MENU_OPS[4]: return edit_db_layout()
+
+        elif choice == MAIN_MENU_OPS[5]: return search_atts()
+
+        elif choice == MAIN_MENU_OPS[6]: return graphmain_layout()
+
+        elif choice == MAIN_MENU_OPS[7]: return analysis_main()
+
+        elif choice == MAIN_MENU_OPS[8]: return admin_layout()
         
         else:
             return "Idk what happened but we got here somehow"
     
-#--------------------------------------------------------------------------
+#---------------------------------------------------edit database callbacks ---------------------------------
+    @app.callback(
+        Output('edit-db-container', 'children'),
+        [Input('create-folder', 'n_clicks'),
+         Input('del-or-move', 'n_clicks')]
+    )
+    def edit_db_landing(n1, n2):
+        trigg = ctx.triggered_id
+        if trigg is None:
+            return ''
+        
+        if trigg == 'create-folder':
+            return creategroup_layout()
+        elif trigg == 'del-or-move':
+            return del_or_move()
 
     @app.callback(
         Output('group-creation-output', 'children'),
@@ -73,7 +80,93 @@ def register_main_callbacks(app):
             return html.Span(f'Group initialized at {created_file_address}.', style = {'color': 'green'})
         except Exception as e:
             return html.Span(f'Error initializing group: {e}', style = {'color': 'red'})
-#--------------------------------------------------------------------------
+        
+    #usually id make separate layout functions for the outputs of this callback but i dont want to rn so im not going to
+    @app.callback(
+        Output('edit-page-2', 'children'),
+        [Input('move-sm', 'n_clicks'),
+         Input('delete-sm', 'n_clicks')],
+        State('address-to-edit', 'value')
+    )
+    def edit2(n1, n2, path):
+        trigg = ctx.triggered_id
+        if trigg is None:
+            return ''
+        
+        if trigg == 'move-sm':
+            with h5tbx.File(MASTER_FILE, 'r') as master:
+                if path in master:
+                    return html.Div([ html.Br(),
+                        html.H6('Warning: you can mess things up very fast with "move data" if you\'re not careful with your addresses. Double check your typing!'),
+                        html.Label('Enter address to move data to:'), html.Br(),
+                        dcc.Input(id = 'new-location', type = 'text', placeholder = '/', size = '50'), html.Br(),
+                        html.Button('Move', id = 'confirm-move', n_clicks= 0),
+                        html.Div(id = 'move-confirmation')
+                    ])
+                else:
+                    return html.Span(f'{path} not found in master file', style = {'color': 'red'})
+
+        elif trigg == 'delete-sm':
+            with h5tbx.File(MASTER_FILE, 'r') as master:
+                if path in master:
+                    return html.Div([ html.Br(),
+                        html.Label(f'You are deleting {path}. This action cannot be undone. Are you sure?'), html.Br(),
+                        html.Button('Delete', id = 'confirm-delete', n_clicks = 0, style = {'backgroundColor': "#e65757"}),
+                        html.Button('Cancel', id = 'cancel-delete', n_clicks = 0), html.Br(),
+                        html.Div(id = 'delete-confirmation')
+                    ])
+                else:
+                    return html.Span(f'{path} not found in master file', style = {'color': 'red'})
+        
+    @app.callback(
+        Output('delete-confirmation', 'children'),
+        [Input('confirm-delete', 'n_clicks'),
+         Input('cancel-delete', 'n_clicks')],
+        State('address-to-edit', 'value')
+    )
+    def edit3(n1, n2, path):
+        trigg = ctx.triggered_id
+        if trigg is None:
+            return ''
+        
+        if trigg == 'confirm-delete':
+            with master_lock:
+                with h5tbx.File(MASTER_FILE, 'a') as master:
+                    del master[path]
+            return html.Span(f'{path} permanently deleted from {MASTER_FILE}.')
+        
+        elif trigg == 'cancel-delete':
+            return html.Span(f'Delete canceled. {path} lives to see another day')
+        
+    @app.callback(
+        Output('move-confirmation', 'children'),
+        Input('confirm-move', 'n_clicks'),
+        State('new-location', 'value'),
+        State('address-to-edit', 'value')
+    )
+    def edit4(n, new_path, old_path):
+        if n == 0:
+            return ''
+        
+        with master_lock:
+            with h5tbx.File(MASTER_FILE, 'a') as master:
+                if new_path in master:
+                    try:
+                        if isinstance(master[new_path], h5py.Dataset):
+                            return html.Span(f'Move canceled. {new_path} is not a group')
+                    except KeyError:
+                        pass
+
+                name = old_path.split('/')[-1]
+                master.copy(source = master[old_path], dest = f'{new_path}/{name}')
+                del master[old_path]
+
+                if new_path in master:
+                    return html.Span(f'Data at {old_path} successfully transferred to {new_path}', style = {'color': 'green'})
+                else:
+                    return html.Span(f'Data at {old_path} was unable to be copied to {new_path}', style = {'color': 'red'})
+
+#-------------------------------------------------------------------------
 #callbacks for dynamic dropdowns
 #   first - add new dropdown when user selects from previous
     @app.callback(

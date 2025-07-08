@@ -5,9 +5,19 @@ from utils.helpers import get_keys
 from utils.constants import AA_ALLOY_OPS
 from utils.constants import MASTER_FILE
 
+def edit_db_layout():
+    return html.Div([
+        html.H4("Edit database", style = {'text-align': 'center'}), 
+        html.Div([
+            html.Button('Create a folder', id = 'create-folder', n_clicks = 0),
+            html.Button('Delete/move files', id = 'del-or-move', n_clicks = 0), html.Br(), html.Br()
+        ], style = {'textAlign': 'center'}),
+        html.Div(id = 'edit-db-container')
+    ])
+
 def creategroup_layout():
     return html.Div([
-        html.H4("Add a folder anywhere", style = {'text-align': 'center'}), 
+        html.H6('Initialize a folder'),
         html.Label("[IMPORTANT] Input desired location for group separated by / (i.e. /AAXXXX/builds/data1/something/etc)"), html.Br(),
 
         dcc.Input(
@@ -16,7 +26,7 @@ def creategroup_layout():
             placeholder = 'File: /example/like/this'
         ), html.Br(), html.Br(),
 
-        html.Label("Input name of your group:"), html.Br(),
+        html.Label("Input name of your folder:"), html.Br(),
         dcc.Input(
             id = 'created-name',
             type = 'text',
@@ -29,6 +39,21 @@ def creategroup_layout():
     style = {'padding': '20px 35px'}
     )
 
+def del_or_move():
+    return html.Div([
+        html.Label('Address:'), html.Br(),
+        dcc.Input(
+            id = 'address-to-edit',
+            type = 'text',
+            placeholder = '/',
+            size = '50'
+        ), html.Br(),
+        html.Button('Move', id = 'move-sm', n_clicks = 0),
+        html.Button('Delete', id = 'delete-sm', n_clicks = 0), html.Br(),
+        html.Div(id = 'edit-page-2')
+    ], style = {'padding-left': '300px'})
+
+#----------------------------------------------------------
 def browsedb_layout():
     return html.Div([
         html.H4("Browse database", style = {'text-align': 'center'}), 
