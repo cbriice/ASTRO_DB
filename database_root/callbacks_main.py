@@ -136,7 +136,7 @@ def register_main_callbacks(app):
                         del master[path]
                 return html.Span(f'{path} permanently deleted from {MASTER_FILE}.')
             else:
-                html.Span(f'{path} is too high level to be deleted. Force canceling', style = {'color': 'red'})
+                return html.Span(f'{path} is too high level to be deleted. Force canceling', style = {'color': 'red'})
         
         elif trigg == 'cancel-delete':
             return html.Span(f'Delete canceled. {path} lives to see another day')
