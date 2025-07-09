@@ -5,7 +5,7 @@ from utils.tools import find_header_line
 from utils.plot_tools import universal_decode
 from dash import html
 from pandas import DataFrame as df
-from utils.constants import METRICS_MACHINEFILE, MASTER_FILE, COLUMN_MAP_STANDARD
+from utils.constants import METRICS_MACHINEFILE, MASTER_FILE, COLUMN_MAP_STANDARD, AA_ALLOY_OPS
 import numpy as np
 from utils.lock import master_lock
 
@@ -221,3 +221,14 @@ def analysis_table(comp_list, normalized_diff):
         'borderCollapse': 'collapse',
         'border': '1px solid black'
         })
+
+def confirm_edit(path):
+    if '/' in path:
+        name_edit = path.split('/')[-1]
+        if name_edit in AA_ALLOY_OPS or name_edit in ['builds', 'ex-situ']:
+            return False
+        if path == '/':
+            return False
+        
+        return True
+            

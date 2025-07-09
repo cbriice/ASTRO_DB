@@ -2,13 +2,12 @@ import dash, requests, h5py
 from dash import dcc, html, Input, Output, State, ctx, ALL
 from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout, admin_layout, edit_db_layout, del_or_move
 from backend_deep import add_data, add_group
-from utils.constants import MAIN_MENU_OPS
-from utils.helpers import ntng, get_keys
+from utils.constants import MAIN_MENU_OPS, MASTER_FILE
+from utils.helpers import ntng, get_keys, confirm_edit
 from layouts_graphinterface import graphmain_layout
 from layouts_uploaddata import uploaddata_layout
 from layouts_search import search_atts
 from layouts_atts import att_main
-from utils.constants import MASTER_FILE
 from layouts_analysis import analysis_main
 from flask import session, request
 from utils.lock import master_lock
@@ -130,10 +129,14 @@ def register_main_callbacks(app):
             return ''
         
         if trigg == 'confirm-delete':
-            with master_lock:
-                with h5tbx.File(MASTER_FILE, 'a') as master:
-                    del master[path]
-            return html.Span(f'{path} permanently deleted from {MASTER_FILE}.')
+            confirm = confirm_edit(path)
+            if confirm:
+                with master_lock:
+                    with h5tbx.File(MASTER_FILE, 'a') as master:
+                        del master[path]
+                return html.Span(f'{path} permanently deleted from {MASTER_FILE}.')
+            else:
+                html.Span(f'{path} is too high level to be deleted. Force canceling', style = {'color': 'red'})
         
         elif trigg == 'cancel-delete':
             return html.Span(f'Delete canceled. {path} lives to see another day')
@@ -148,23 +151,27 @@ def register_main_callbacks(app):
         if n == 0:
             return ''
         
-        with master_lock:
-            with h5tbx.File(MASTER_FILE, 'a') as master:
-                if new_path in master:
-                    try:
-                        if isinstance(master[new_path], h5py.Dataset):
-                            return html.Span(f'Move canceled. {new_path} is not a group')
-                    except KeyError:
-                        pass
+        confirm = confirm_edit(old_path)
+        if confirm:
+            with master_lock:
+                with h5tbx.File(MASTER_FILE, 'a') as master:
+                    if new_path in master:
+                        try:
+                            if isinstance(master[new_path], h5py.Dataset):
+                                return html.Span(f'Move canceled. {new_path} is not a group')
+                        except KeyError:
+                            pass
 
-                name = old_path.split('/')[-1]
-                master.copy(source = master[old_path], dest = f'{new_path}/{name}')
-                del master[old_path]
+                    name = old_path.split('/')[-1]
+                    master.copy(source = master[old_path], dest = f'{new_path}/{name}')
+                    del master[old_path]
 
-                if new_path in master:
-                    return html.Span(f'Data at {old_path} successfully transferred to {new_path}', style = {'color': 'green'})
-                else:
-                    return html.Span(f'Data at {old_path} was unable to be copied to {new_path}', style = {'color': 'red'})
+                    if new_path in master:
+                        return html.Span(f'Data at {old_path} successfully transferred to {new_path}', style = {'color': 'green'})
+                    else:
+                        return html.Span(f'Data at {old_path} was unable to be copied to {new_path}', style = {'color': 'red'})
+        else:
+            return html.Span(f'{old_path} is too high level to be moved. Force canceling', style = {'color': 'red'})
 
 #-------------------------------------------------------------------------
 #callbacks for dynamic dropdowns
