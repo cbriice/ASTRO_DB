@@ -292,6 +292,7 @@ def add_exsitu(df_list, atts: dict, master_file):
                 continue        #skip if program grabs table headers instead of actual data (once again idk why it does but i can catch it)
             
             atts.update({'coordinates': coords})
+            atts.update({'test_direction': test_dir})
             new_title = title.replace(' ', '-')
             build_info = f"{atts['build_id']}-{atts['build_temper']}"
             address = f"/{atts['build_alloy']}/ex-situ/{new_title}/{build_info}"
