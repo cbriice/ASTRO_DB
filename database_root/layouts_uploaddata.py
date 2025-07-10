@@ -76,6 +76,18 @@ def upload_file_section(g_id):
             },
             multiple=False
         ), html.Br(),
+
+        html.H6('Is this a csv file that needs to be cleaned?'),
+        html.Label('Raw in-situ, motion capture files should be cleaned.'), html.Br(),
+        dcc.RadioItems(
+            id = 'cleaned-or-not',
+            options = [{'label': 'Yes', 'value': 'need-clean'},
+                       {'label': 'No', 'value': 'no-clean'}],
+            value = 'need-clean'
+        ), html.Br(),
+        html.Label('Sample rate (should match that of the associated build file):'), html.Br(),
+        dcc.Input(id = 'sample-rate', type = 'number', placeholder = '1', step = 1), html.Br(), html.Br(),
+        
         html.Button('Upload', id=f'submit-upload-{g_id}', n_clicks=0, style={'backgroundColor': "#b3f097"}),
         dcc.Store(id=f'uploaded-filepath-{g_id}', storage_type='memory'),
         html.Div(id=f'upload-status-{g_id}'), html.Br(),

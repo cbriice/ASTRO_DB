@@ -143,7 +143,15 @@ def uploadmachine_layout():
             id = 'build-id-machine', 
             type = 'text',
             placeholder = 'B1234'
-            ), html.Br(),
+            ), html.Br(), html.Br(),
+
+        html.Label('Desired sample rate'), html.Br(),
+        dcc.Input(
+            id = 'machine-file-hz',
+            type = 'number',
+            placeholder = '1',
+            step = 1
+        ), html.Br(), html.Br(),
             
         html.Button('Submit', id = 'submit-machine-file', n_clicks = 0), html.Br(),
         dcc.Store('path-for-atts-machine', storage_type = 'memory'),

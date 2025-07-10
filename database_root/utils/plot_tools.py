@@ -163,6 +163,10 @@ def find_time_column(path: str, master_file):
         if 'Timestamp' in sisters:
             return pd.to_datetime(master[parent]['Timestamp'][:])
         
+        #Brett's cleaned files should have this column which makes plotting very convenient
+        elif 'Seconds into Build' in sisters:
+            return pd.to_timedelta(np.array(master[parent]['Seconds into Build']))
+        
         #gotta decode time columns to be processed correctly on backend after being stored in dcc.Store
         elif 'Time (Seconds)' in sisters or 'Time' in sisters:
             key = 'Time' if 'Time' in sisters else 'Time (Seconds)'

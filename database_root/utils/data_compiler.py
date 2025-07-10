@@ -155,11 +155,20 @@ def compile_atts(path):
             else:
                 name = path.split('/')[-1]
             atts = [f'{key}: {int(round(val, 0)) if isinstance(val, float) else val}' for key, val in node.attrs.items()]
-            #print(atts)
             
-            return html.Div([
-                html.Br(),
-                html.H6(f'Metrics for {name}:'),
-                show_atts(atts)
-            ], style = {'padding-left': '300px', 'padding-right': '300px'})
+            #if notice attribute, this is important information that should be displayed at the top of the info page
+            if 'notice' in node.attrs:
+                return html.Div([
+                    html.Br(),
+                    html.H6(f"NOTICE: {node.attrs['notice']}", style = {'color': 'red'}),
+                    html.H6(f'Metrics for {name}:'),
+                    show_atts(atts)
+                ], style = {'padding-left': '300px', 'padding-right': '300px'})
+                
+            else:
+                return html.Div([
+                    html.Br(),
+                    html.H6(f'Metrics for {name}:'),
+                    show_atts(atts)
+                ], style = {'padding-left': '300px', 'padding-right': '300px'})
 

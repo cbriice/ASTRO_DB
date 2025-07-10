@@ -7,6 +7,7 @@ from layouts import add_machine_atts
 from utils.tools import find_header_line
 import backend_top as bt
 from utils.constants import AA_ALLOY_OPS, MASTER_FILE
+import h5rdmtoolbox as h5tbx
 
 def register_upload_callbacks(app):
     @app.callback(
@@ -53,6 +54,11 @@ def register_upload_callbacks(app):
                 
                 return lud.upload_file_section(1), parent_path, name, 'build'
             
+    #build data upload
+    from cleaners.isd_df_cleaner import isd_df_clean
+    from cleaners.md_df_cleaner import md_df_clean
+    from cleaners.mcd_df_cleaner import mcd_df_clean, gpt_clean
+
     @app.callback(
         [Output('upload-status-1', 'children'),
          Output('attribute-adder-1', 'children'),
@@ -61,9 +67,11 @@ def register_upload_callbacks(app):
          Input('upload-data-1', 'contents')],
         State('upload-data-1', 'filename'),
         State('parent-path-1', 'data'),
-        State('name-upload-1', 'data')
+        State('name-upload-1', 'data'),
+        State('cleaned-or-not', 'value'),
+        State('sample-rate', 'value')
     )
-    def whoevenreadsthese(n, contents, filename, parent_path, name):
+    def whoevenreadsthese(n, contents, filename, parent_path, name, cleaned_or_not, sample_rate):
         if n == 0 and not contents:
             return '', '', ntng()
         elif n == 0 and contents:
@@ -73,11 +81,59 @@ def register_upload_callbacks(app):
         
         else:
             data = process_upload(contents, None)
+            auto_adjusted = False
 
+            #if user selects clean, need to make sure it's a csv and then find out what kind of csv to run which kind of cleaner function
+            if cleaned_or_not == 'need-clean':
+                content_type, content = contents.split(',', 1)
+                if content_type:
+                    if content_type.startswith('data:text/csv'): #process_upload will have output a dataframe so now we can proceed with cleaning
+                        if sample_rate:
+                            if sample_rate > 20:
+                                return html.Span('Specified sample rate is too high (should be <=20)', style = {'color': 'red'}), '', ntng()
+                            if isinstance(sample_rate, float):
+                                sample_rate = int(sample_rate)
+                            
+                            #sample rate stored as attribute on build. sample rate should be constant for all files associated with one build. handles this automatically
+                            try:
+                                print(f'Looking for sample rate attribute in {parent_path}/machine_data to match...')
+                                with h5tbx.File(MASTER_FILE, 'r') as master:
+                                    build_node = master[parent_path]
+                                    sample_att = build_node.attrs['sample_rate']
+                                    if sample_rate != sample_att:
+                                        sample_rate = sample_att
+                                        auto_adjusted = True
+                            except Exception as e:
+                                print(f'Sample rate attribute not found at {parent_path}, or there was an error. Continuing with data upload. {e}')
+
+                            #check whether isd or mcd
+                            if 'Force_1_Force (lbs.)' in data.columns:
+                                data = isd_df_clean(data, sample_rate)
+                                print(f'In-situ data cleaned and reprocessed at {sample_rate} Hz')
+
+                            else:
+                                #idk how to safely check for mcd since the column headers are so nondescriptive so im taking the easy way out
+                                try:
+                                    data = gpt_clean(data, sample_rate)
+                                    print(f'Motion capture data cleaned and reprocessed at {sample_rate} Hz')
+                                except Exception as e:
+                                    print(f"You can (probably) ignore this but I'm logging it: {e}")
+                                    pass    #if this throws an error, its probably just a random csv and shouldnt go through a dedicated process func
+                    
+                        else:
+                            return html.Span('Can\'t clean data without specified sample rate', style = {'color': 'red'}), '', ntng()
+                    else:
+                        print("Can't clean non-csv data. Continuing with normal data upload")
+                else:
+                    return html.Span('No content', style = {'color': 'red'}), '', ntng()
+            
             try:
                 success = add_data(data, MASTER_FILE, parent_path, name, False)
                 if success:
-                    return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
+                    if auto_adjusted:
+                        return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}. Sample rate auto-adjusted to match build sample rate', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
+                    else:
+                        return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}.', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
                 else:
                     return html.Span(f'Failed to add {name} to {parent_path}. Check console for what happened', style={'color': 'red'}), '', ntng()
             except Exception as e:
@@ -299,6 +355,7 @@ def register_upload_callbacks(app):
                 return html.Span(f'Attribute assignment failed. Check console.', style = {'color': 'red'})
             
     #------------------------------------------------ upload initial machine file
+
     @app.callback(
         [Output('upload-machine-result', 'children'),
          Output('machine-file-status', 'children'),
@@ -309,9 +366,10 @@ def register_upload_callbacks(app):
         State('alloy-choice', 'value'),
         State('build-id-machine', 'value'),
         State('upload-machine', 'filename'),
-        State('build-fail-bool', 'value')
+        State('build-fail-bool', 'value'),
+        State('machine-file-hz', 'value')
     )
-    def machine_upload(n_clicks, contents, alloy, build_id, filename, fail):
+    def machine_upload(n_clicks, contents, alloy, build_id, filename, fail, sample_rate):
         trigg = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
 
         if trigg == 'upload-machine.contents':
@@ -323,9 +381,13 @@ def register_upload_callbacks(app):
         elif trigg == 'submit-machine-file.n_clicks':
             if not filename.endswith('csv'):
                 return html.Span("Input file should be a csv", style = {'color': 'red'}), '', '', ntng()
-            if not alloy or not build_id or not contents:
+            if not alloy or not build_id or not contents or not sample_rate:
                 return html.Span("Error: Missing required information.", style = {'color': 'red'}), '', '', ntng()
-            
+            if sample_rate:
+                if sample_rate > 20:
+                    return html.Span('Specified sample rate is too high', style = {'color': 'red'}), '', '', ntng()
+                if isinstance(sample_rate, float):
+                    sample_rate = int(sample_rate)
             try:
                 failed = True if fail == 'True' else False
                 content_type, content_string = contents.split(',')
@@ -336,13 +398,18 @@ def register_upload_callbacks(app):
                 header_row = find_header_line(csv_io)
                 csv_io.seek(0)
 
+                print('Machine file obtained, starting clean...')
                 userfile = pd.read_csv(csv_io, skiprows = header_row)
+                userfile = md_df_clean(userfile, sample_rate)
+                print(f'Machine file cleaned and reprocessed at {sample_rate} Hz')
+
                 build_file, atts = bt.create_machine_hdf5(userfile, build_id, filename)
 
                 if failed:
                     atts.update({'failed': 'true'})
                 else:
                     atts.update({'failed': 'false'})
+                atts.update({'sample_rate': int(sample_rate)})
 
                 bt.merge_build_to_master(MASTER_FILE, alloy, build_id, build_file, atts)
                 
