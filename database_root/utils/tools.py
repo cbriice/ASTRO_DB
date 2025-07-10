@@ -1,11 +1,12 @@
 import numpy as np, pandas as pd
-import base64, h5py, io, json
+import base64, h5py, io, json, os, time
 import h5rdmtoolbox as h5tbx
 import plotly.graph_objects as go
 from dash import html, dash_table
 import utils.plot_tools as pt
 import xarray as xr
 from utils.lock import master_lock
+from utils.constants import EXPORT_DIR
 
 def returnMetric(ips_file)->pd.DataFrame:
         met_df = ips_file
@@ -239,3 +240,11 @@ def find_adjacent(df: pd.DataFrame, target: str):
                     return row.iloc[i + 1]
     print(f'{target} not found in any row of dataframe')
     return None
+
+def clean_temp_exports(folder, max_age_minutes):
+    now = time.time()
+    for fname in os.listdir(folder):
+        fpath = os.path.join(folder, fname)
+        if os.path.isfile(fpath):
+            if now - os.path.getmtime(fpath) > max_age_minutes * 60:
+                os.remove(fpath)

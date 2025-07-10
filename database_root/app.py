@@ -3,11 +3,12 @@ import dash, os
 from dash import html, dcc
 import dash_bootstrap_components as dbc
 import backend_top as dbf
-from flask import Flask, session, redirect, url_for, request, jsonify
+from flask import Flask, session, redirect, url_for, request, jsonify, send_file
 # type: ignore[import]
 from authlib.integrations.flask_client import OAuth # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 from itsdangerous import URLSafeTimedSerializer
+from utils.constants import EXPORT_DIR
 
 #-------------------------- authentication system setup --------------------------------
 #normal authentication workflow
@@ -117,6 +118,11 @@ def bypass_login(token):
     except Exception as e:
         return redirect('/login?error=bypass_expired')
 
+#----------- downloading csvs
+@server.route('/download/<filename>')
+def download_file(filename):
+    file_path = os.path.join(EXPORT_DIR, filename)
+    return send_file(file_path, as_attachment = True)
 
 #----------------------------- dash app setup ------------------------------------------
 from callbacks_main import register_main_callbacks

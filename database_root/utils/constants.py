@@ -2,6 +2,8 @@
 
 MASTER_FILE = 'master2.h5'
 
+EXPORT_DIR = 'temp_exports'
+
 MAIN_MENU_OPS = ['Browse database', 'Upload initial machine file', 'Upload data', 'Add attributes', 'Edit database', 
                  'Search specific attributes', 'Graph interface', 'Analyze data', 'Admin']
 

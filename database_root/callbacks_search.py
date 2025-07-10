@@ -1,5 +1,5 @@
 from dash import dcc, html, Input, Output, State, ctx, MATCH
-from utils.data_compiler import compile_atts, compile_plot
+from utils.data_compiler import compile_atts, compile_plot, reconstruct_df, export_csv
 from layouts_search import manual_search, search_all, search_autos, result_search, search_exsitu
 import h5rdmtoolbox as h5tbx
 from utils.search_tools import search_for_att, show_datasets
@@ -7,6 +7,7 @@ from utils.helpers import ntng
 from utils.tools import process_data_for_preview
 from layouts import display_data_info
 from utils.constants import MASTER_FILE
+import h5py
 
 def get_graph(dataset_name):    #little graph util function only for use in these callbacks
     graph = compile_plot(
@@ -31,14 +32,18 @@ def try_process(path, master_file):
 def register_search_callbacks(app):
     #show details from browse database section
     @app.callback(
-        Output('details-bd', 'children'),
-        Input('show-atts-bd', 'n_clicks'),
+        [Output('details-bd', 'children'),
+         Output('csv-download-link', 'children')],
+        [Input('show-atts-bd', 'n_clicks'),
+         Input('export-ds-csv', 'n_clicks')],
         State('selected-path-store', 'data')
     )
-    def iamsotired(n, path):
-        if n == 0:
-            return ''
-        else:
+    def iamsotired(n1, n2, path):
+        trigg = ctx.triggered_id
+        if trigg is None:
+            return '', ''
+        
+        if trigg == 'show-atts-bd':
             formatted_atts = compile_atts(path)
             stored_data, plottable = try_process(path, MASTER_FILE)
             if plottable:
@@ -46,7 +51,26 @@ def register_search_callbacks(app):
             else:
                 graph = ''
             
-            return display_data_info(formatted_atts, stored_data, graph)
+            return display_data_info(formatted_atts, stored_data, graph), ''
+        
+        elif trigg == 'export-ds-csv':
+            if path is None:
+                return html.Span("Don't do that"), ''
+            
+            with h5tbx.File(MASTER_FILE, 'r') as master:
+                node = master[path]
+                if isinstance(node, h5py.Dataset):
+                    return '', html.Span("Can't export single dataset to a csv. Go back one layer and select the parent group of the dataset")
+                if not any(isinstance(d, h5py.Dataset) for _, d in node.items()):
+                    return '', html.Span(f"Can't export data at {path} to a csv, no datasets present", style = {'color': 'red'})
+                
+            df = reconstruct_df(path)
+            split = path.split('/')
+            filename = f'{split[-2]}-{split[-1]}.csv'
+            redirect = export_csv(df, filename)
+            link = html.A('Click to download CSV', href = redirect, target = '_blank')
+
+            return html.Span(f'Data at {path} exported to {filename}', style = {'color': 'green'}), link
         
     #---------------------------------------------------------------- search page section
     @app.callback(

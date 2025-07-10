@@ -4,10 +4,10 @@ import utils.plot_tools as pt
 from backend_deep import get_data
 import pandas as pd
 from utils.templates import default_layout
-from utils.constants import COLUMN_MAP_METRIC, COLUMN_MAP_STANDARD, INVALID_COLS, MASTER_FILE
-from utils.tools import returnMetric
+from utils.constants import COLUMN_MAP_METRIC, COLUMN_MAP_STANDARD, INVALID_COLS, MASTER_FILE, EXPORT_DIR
+from utils.tools import returnMetric, clean_temp_exports
 from plotly import graph_objects as go, express as px
-import h5py
+import h5py, os
 import xarray as xr, numpy as np
 import h5rdmtoolbox as h5tbx
 from dash import dcc, html
@@ -172,3 +172,24 @@ def compile_atts(path):
                     show_atts(atts)
                 ], style = {'padding-left': '300px', 'padding-right': '300px'})
 
+#idea of this function is to either be an intermediate to then export to csv, or give user the option to grab a df and resample at diff rate
+def reconstruct_df(path):
+    with h5tbx.File(MASTER_FILE, 'r') as master:
+        node = master[path]
+        ds = {}
+        for name, data in node.items():
+            if isinstance(data, h5py.Dataset):
+                ds[name] = data[:]
+
+    return pd.DataFrame(ds)
+    
+def export_csv(df, filename):
+    if isinstance(df, pd.DataFrame):
+        os.makedirs(EXPORT_DIR, exist_ok = True)
+        clean_temp_exports(EXPORT_DIR, 10)
+        path = os.path.join(EXPORT_DIR, filename)
+        df.to_csv(path, index = False)
+        return f'/download/{filename}'
+    else:
+        print(f'{type(df)} not a dataframe')
+        return None
