@@ -80,3 +80,69 @@ def md_df_clean(md_df, hertz):
     md_new_df = md_new_df[cols]
 
     return md_new_df
+
+#Brett's code is way too slow because it's not vectorized. I don't have time to rewrite his code so this is a gpt generated block of code mimicking his
+import numpy as np
+
+def vectorized_md_df_clean(md_df: pd.DataFrame, hertz: float) -> pd.DataFrame:
+    md_interp_col = ['SpinVel','SpinTrq','SpinPwr','SpinSP','FeedVel','FeedPos','FeedTrq','FRO','PathVel','XPos','XVel','XTrq',
+                     'YPos','YVel','YTrq','ZPos','ZVel','ZTrq','Low','High','Ktype1','Ktype2','Ktype3','Ktype4','O2','ToolTemp','Zscale']
+    md_repeat_col = ['Date','Time','Gcode']
+
+    time_split = md_df["Time"].str.split(":", expand=True).astype(float)
+    time_sec = time_split[0]*3600 + time_split[1]*60 + time_split[2]
+
+    full_seconds = time_sec.astype(int)
+    md_df["second"] = full_seconds
+    grouped = md_df.groupby("second")
+
+    rows = []
+
+    for sec, group in grouped:
+        if len(group) < 2:
+            continue
+
+        start = group.iloc[0]
+        end = group.iloc[-1]
+        dt = time_sec.loc[end.name] - time_sec.loc[start.name]
+        steps = max(1, int(round(hertz * dt)))
+        t = np.linspace(0, dt, steps, endpoint=False)
+
+        interp_array = (start[md_interp_col].values[None, :] + 
+                        ((end[md_interp_col] - start[md_interp_col]) / dt).values[None, :] * t[:, None])
+        interp_df = pd.DataFrame(interp_array, columns=md_interp_col)
+
+        repeat_vals = {col: [start[col]] * steps for col in md_repeat_col}
+        block = pd.concat([pd.DataFrame(repeat_vals), interp_df], axis=1)
+        block["Time (Seconds)"] = start["Time"]
+        rows.append(block)
+
+    md_new_df = pd.concat(rows, ignore_index=True)
+    #force correct datatypes to avoid object bullshit
+    numeric_cols = [col for col in md_new_df.columns if col not in md_repeat_col + ['Time (Seconds)']]
+    for col in numeric_cols:
+        md_new_df[col] = pd.to_numeric(md_new_df[col], errors='coerce')
+
+    for col in md_repeat_col + ['Time (Seconds)']:
+        md_new_df[col] = md_new_df[col].astype(str)
+
+    # Determine when the build starts
+    gcode_initial = md_new_df["Gcode"].iloc[0]
+    start_index = md_new_df["Gcode"].ne(gcode_initial).idxmax()
+    total_rows = len(md_new_df)
+
+    seconds_into_build = np.arange(total_rows) / hertz
+    seconds_into_build = seconds_into_build - seconds_into_build[start_index]
+    md_new_df["Seconds into Build"] = seconds_into_build.round(2)
+
+    md_new_df["On-Off"] = 0
+    md_new_df.loc[start_index:, "On-Off"] = 1
+
+    cols = list(md_new_df.columns)
+    cols.remove("Seconds into Build")
+    cols.insert(2, "Seconds into Build")
+    md_new_df = md_new_df[cols]
+    
+    print(md_new_df.dtypes[md_new_df.dtypes == 'object'])
+
+    return md_new_df

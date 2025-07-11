@@ -55,8 +55,8 @@ def register_upload_callbacks(app):
                 return lud.upload_file_section(1), parent_path, name, 'build'
             
     #build data upload
-    from cleaners.isd_df_cleaner import isd_df_clean
-    from cleaners.md_df_cleaner import md_df_clean
+    from cleaners.isd_df_cleaner import isd_df_clean, vectorized_isd_df_clean
+    from cleaners.md_df_cleaner import md_df_clean, vectorized_md_df_clean
     from cleaners.mcd_df_cleaner import mcd_df_clean, gpt_clean
 
     @app.callback(
@@ -83,6 +83,7 @@ def register_upload_callbacks(app):
             data = process_upload(contents, None)
             auto_adjusted = False
             build_file = True
+            low_quality_interpolation = False
 
             #if user selects clean, need to make sure it's a csv and then find out what kind of csv to run which kind of cleaner function
             if cleaned_or_not == 'need-clean':
@@ -110,7 +111,7 @@ def register_upload_callbacks(app):
                             #check whether isd or mcd
                             if 'Force_1_Force (lbs.)' in data.columns:
                                 build_file = True
-                                data = isd_df_clean(data, sample_rate)
+                                data = vectorized_isd_df_clean(data, sample_rate)
                                 print(f'In-situ data cleaned and reprocessed at {sample_rate} Hz')
 
                             else:
@@ -411,7 +412,7 @@ def register_upload_callbacks(app):
 
                 print('Machine file obtained, starting clean...')
                 userfile = pd.read_csv(csv_io, skiprows = header_row)
-                userfile = md_df_clean(userfile, sample_rate)
+                userfile = vectorized_md_df_clean(userfile, sample_rate)
                 print(f'Machine file cleaned and reprocessed at {sample_rate} Hz')
 
                 build_file, atts = bt.create_machine_hdf5(userfile, build_id, filename)

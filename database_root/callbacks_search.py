@@ -87,6 +87,8 @@ def register_search_callbacks(app):
                     node = master[path]
                     if not isinstance(node, h5py.Group):
                         return html.Span('Can only combine and export data from a build file.'), ''
+                    if 'machine_data' not in node.keys():
+                            return html.Span('Can only combine and export data from a build file.'), ''
                     
                     for name in node.keys():
                         #get things at node. decide if they are build files to be recombined
@@ -145,6 +147,9 @@ def register_search_callbacks(app):
                         if isd_df is None: missing.append('isd')
                         if machine_df is None: missing.append('machine')
                         return html.Span(f'Not enough valid files found at {path} to construct combined csv. Missing: {missing}', style = {'color': 'red'}), ''
+                
+                else:
+                    return html.Span(f'Unable to process request: Files under this group are likely missing "build_id" attribute. Add this under "Add attributes"'), ''
                     
             except Exception as e:
                 print(f'Failed to combine data: {e}')
