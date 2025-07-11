@@ -5,18 +5,6 @@ from layouts_analysis import load_storage
 from utils.search_tools import conformance_comp
 import plotly.graph_objects as go
 
-'''
-this how im tryna lay shit out:
-when page pops up, option to load or clear storage. 2 options for storage to load - load first storage which would be the "model" build, and then
-second storage would have the shit thats being compared to the model. idea is to make it easy to look at conformance
-
-i think the stores will probably just have build addresses so then i can just load a preview of that build as i do in other tabs and give the user
-the option to expand and look at specific things if they want. initially ill show list of stored builds once i load and then give checklist where the
-user can choose how much information they want to see. 
-    first level: conformance comparisons, attribute summaries, "compare datasets" option
-    second level: show list of shared datasets organized by subgroup which user can choose to analyze further. 
-'''
-
 def register_analysis_callbacks(app):
     @app.callback(
         [Output('analysis-2', 'children'),
@@ -109,10 +97,10 @@ def register_analysis_callbacks(app):
         resized = []
         for fig in plot_list:
             fig = go.Figure(fig)
-            fig.update_layout({
-                'width': 700,
-                'height': 500
-            })
+            if all(trace.type == 'scatter' and trace.mode == 'lines' for trace in fig.data) and len(fig.data) > 1:  #then its a stacked plot, needs custom width
+                fig.update_layout({'width': 1000, 'height': 500})
+            else:
+                fig.update_layout({'width': 700, 'height': 500})
             resized.append(fig)
         source_list = [item.get('source') for item in global_plot_data]
 
