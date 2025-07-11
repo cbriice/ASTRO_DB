@@ -161,9 +161,9 @@ def serve_layout():
         html.Div(id='main-content'),
         
         #global dcc.Store objects for saving/loading shit for comparison
-        dcc.Store(id = 'global-storage-1', data = [], storage_type = 'memory'),
-        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'memory'),
-        dcc.Store(id = 'global-graph-storage', data = [], storage_type = 'memory')     
+        dcc.Store(id = 'global-storage-1', data = [], storage_type = 'session'),
+        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'session'),
+        dcc.Store(id = 'global-graph-storage', data = [], storage_type = 'session')     
 ])
 
 app.layout = serve_layout
