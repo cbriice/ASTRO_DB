@@ -2,6 +2,10 @@
 
 MASTER_FILE = 'master2.h5'
 
+MACHINE_FILE_SAMPLE_DEFAULT = 20
+ISD_FILE_SAMPLE_DEFAULT = 5
+MCD_FILE_SAMPLE_DEFAULT = 20
+
 EXPORT_DIR = 'temp_exports'
 
 MAIN_MENU_OPS = ['Browse database', 'Upload initial machine file', 'Upload data', 'Add attributes', 'Edit database', 
@@ -58,6 +62,40 @@ MACHINEFILE_HEADERS = ['SpinPwr', 'SpinTrq', 'SpinVel', 'SpinSP', 'FeedVel', 'Fe
 WHITELIST = ['login', 'auth_callback', 'static', 'healthcheck', 'generate_bypass']
 
 MAT_TESTING_TABLES = ['Tension Test Data', 'Fracture Toughness Results', 'Smooth Fatigue Results']
+
+FORCE_METS = ['Force_1_Force_min', 'Force_1_Force_max', 'Force_1_Force_avg',
+    'Force_2_Force_min', 'Force_2_Force_max', 'Force_2_Force_avg',
+    'Force_3_Force_min', 'Force_3_Force_max', 'Force_3_Force_avg',
+    'Force_4_Force_min', 'Force_4_Force_max', 'Force_4_Force_avg',
+    'Force_5_Force_min', 'Force_5_Force_max', 'Force_5_Force_avg', 
+    'Total_Force_min', 'Total_Force_max', 'Total_Force_avg']
+
+HTHFS_METS = ['HTHFS_1_Average_Temperature_min', 'HTHFS_1_Average_Temperature_max', 'HTHFS_1_Average_Temperature_avg',
+    'HTHFS_1_Bottom_Temperature_min', 'HTHFS_1_Bottom_Temperature_max', 'HTHFS_1_Bottom_Temperature_avg',
+    'HTHFS_1_HeatFlux_min', 'HTHFS_1_HeatFlux_max', 'HTHFS_1_HeatFlux_avg',
+    'HTHFS_1_Top_Temperature_min', 'HTHFS_1_Top_Temperature_max', 'HTHFS_1_Top_Temperature_avg']
+
+LTHFS_METS = ['LTHFS_1_HeatFlux_min', 'LTHFS_1_HeatFlux_max', 'LTHFS_1_HeatFlux_avg',
+    'LTHFS_1_Temperature_min', 'LTHFS_1_Temperature_max', 'LTHFS_1_Temperature_avg',
+    'LTHFS_2_HeatFlux_min', 'LTHFS_2_HeatFlux_max', 'LTHFS_2_HeatFlux_avg',
+    'LTHFS_2_Temperature_min', 'LTHFS_2_Temperature_max', 'LTHFS_2_Temperature_avg',
+    'LTHFS_3_HeatFlux_min', 'LTHFS_3_HeatFlux_max', 'LTHFS_3_HeatFlux_avg',
+    'LTHFS_3_Temperature_min', 'LTHFS_3_Temperature_max', 'LTHFS_3_Temperature_avg',
+    'LTHFS_4_HeatFlux_min', 'LTHFS_4_HeatFlux_max', 'LTHFS_4_HeatFlux_avg',
+    'LTHFS_4_Temperature_min', 'LTHFS_4_Temperature_max', 'LTHFS_4_Temperature_avg',
+    'LTHFS_5_HeatFlux_min', 'LTHFS_5_HeatFlux_max', 'LTHFS_5_HeatFlux_avg',
+    'LTHFS_5_Temperature_min', 'LTHFS_5_Temperature_max', 'LTHFS_5_Temperature_avg']
+
+TC_METS = ['TC_10_Temperature_min', 'TC_10_Temperature_max', 'TC_10_Temperature_avg',
+    'TC_11_Temperature_min', 'TC_11_Temperature_max', 'TC_11_Temperature_avg',
+    'TC_12_Temperature_min', 'TC_12_Temperature_max', 'TC_12_Temperature_avg',
+    'TC_13_Temperature_min', 'TC_13_Temperature_max', 'TC_13_Temperature_avg',
+    'TC_14_Temperature_min', 'TC_14_Temperature_max', 'TC_14_Temperature_avg',
+    'TC_5_Temperature_min', 'TC_5_Temperature_max', 'TC_5_Temperature_avg',
+    'TC_6_Temperature_min', 'TC_6_Temperature_max', 'TC_6_Temperature_avg',
+    'TC_7_Temperature_min', 'TC_7_Temperature_max', 'TC_7_Temperature_avg',
+    'TC_8_Temperature_min', 'TC_8_Temperature_max', 'TC_8_Temperature_avg',
+    'TC_9_Temperature_min', 'TC_9_Temperature_max', 'TC_9_Temperature_avg']
 
 #------------------------------------------------------------------ attribute constants. dont even try to read or interpret this mess gang just trust me
 #for demo but mimicking real 

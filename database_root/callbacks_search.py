@@ -8,6 +8,7 @@ from utils.tools import process_data_for_preview
 from layouts import display_data_info
 from utils.constants import MASTER_FILE
 import h5py
+from cleaners.merged_df import merge_isd_mcd_md_df
 
 def get_graph(dataset_name):    #little graph util function only for use in these callbacks
     graph = compile_plot(
@@ -35,10 +36,11 @@ def register_search_callbacks(app):
         [Output('details-bd', 'children'),
          Output('csv-download-link', 'children')],
         [Input('show-atts-bd', 'n_clicks'),
-         Input('export-ds-csv', 'n_clicks')],
+         Input('export-ds-csv', 'n_clicks'),
+         Input('combine-and-export', 'n_clicks')],
         State('selected-path-store', 'data')
     )
-    def iamsotired(n1, n2, path):
+    def iamsotired(n1, n2, n3, path):
         trigg = ctx.triggered_id
         if trigg is None:
             return '', ''
@@ -53,6 +55,7 @@ def register_search_callbacks(app):
             
             return display_data_info(formatted_atts, stored_data, graph), ''
         
+        #let user export data as csv
         elif trigg == 'export-ds-csv':
             if path is None:
                 return html.Span("Don't do that"), ''
@@ -71,6 +74,82 @@ def register_search_callbacks(app):
             link = html.A('Click to download CSV', href = redirect, target = '_blank')
 
             return html.Span(f'Data at {path} exported to {filename}', style = {'color': 'green'}), link
+        
+        #logic to combine files associated with a build and export them as a combined .csv for user to download
+        elif trigg == 'combine-and-export':
+            if path is None:
+                return html.Span("Don't do that"), ''
+            
+            to_combine = []
+            good = False
+            try:
+                with h5tbx.File(MASTER_FILE, 'r') as master:
+                    node = master[path]
+                    if not isinstance(node, h5py.Group):
+                        return html.Span('Can only combine and export data from a build file.'), ''
+                    
+                    for name in node.keys():
+                        #get things at node. decide if they are build files to be recombined
+                        candidate_address = f'{path}/{name}'
+                        candidate = master[candidate_address]   
+                        print(f'Attempting to reconstruct data at {candidate_address}')
+
+                        if isinstance(candidate, h5py.Group):
+                            if 'build_id' in candidate.attrs:   #then we good
+                                good = True
+                                reconstructed = reconstruct_df(candidate_address)
+                                if reconstructed is not None:
+                                    print(f'Reconstructed data at {candidate_address}')
+                                    to_combine.append(reconstructed)
+                                else:
+                                    print(f'Failed to reconstruct data at {candidate_address} . Skipping')
+
+                if good:
+                    print(f'Attempting to generate combined dataframe from data at {path} ...')
+                    machine_df = None
+                    isd_df = None
+                    mcd_df = None
+                    for df in to_combine:
+                        if 'SpinVel' in df.columns:
+                            if machine_df is None:
+                                print(f'Machine file assigned')
+                                machine_df = df
+                        elif 'Force_1_Force' in df.columns:
+                            if isd_df is None:
+                                print(f'ISD file assigned')
+                                isd_df = df
+                            else:
+                                print(f'Duplicate IN-SITU data file found at {path}. Using first one found')
+                        else:
+                            if mcd_df is None:
+                                print(f'MCD file assigned')
+                                mcd_df = df
+                            else:
+                                print(f'Duplicate MCD file found at {path}. Using first one found')
+
+                    if machine_df is not None and isd_df is not None and mcd_df is not None:
+                        try:
+                            merged_df = merge_isd_mcd_md_df(isd_df, mcd_df, machine_df)
+                            merged_filename = f"{path.split('/')[-1]}-merged.csv"
+                            print(f'Successfully generated {merged_filename}')
+                            redirect = export_csv(merged_df, merged_filename)
+                        except Exception as e:
+                            return html.Span(f'Error merging dataframes: {e}', style = {'color': 'red'}), ''
+                        
+                        link = html.A('Click to download merged CSV', href = redirect, target = '_blank')
+                        return html.Span(f'Build files at {path} merged and exported to {merged_filename}', style = {'color': 'green'}), link
+
+                    else:
+                        missing = []
+                        if mcd_df is None: missing.append('mcd')
+                        if isd_df is None: missing.append('isd')
+                        if machine_df is None: missing.append('machine')
+                        return html.Span(f'Not enough valid files found at {path} to construct combined csv. Missing: {missing}', style = {'color': 'red'}), ''
+                    
+            except Exception as e:
+                print(f'Failed to combine data: {e}')
+                return html.Span(f'Failed to compile data from build at {path}. Check console', style = {'color': 'red'}), ''
+
         
     #---------------------------------------------------------------- search page section
     @app.callback(

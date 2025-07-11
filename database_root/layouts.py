@@ -87,7 +87,8 @@ def browsedb_layout():
 
         html.Div([
             html.Button('Show details', id = 'show-atts-bd', n_clicks = 0), 
-            html.Button('Export dataset as .csv', id = 'export-ds-csv', n_clicks = 0)
+            html.Button('Export dataset as .csv', id = 'export-ds-csv', n_clicks = 0),
+            html.Button('Combine build data and export as .csv', id = 'combine-and-export', n_clicks = 0)
         ], style = {'padding-left': '300px'}),
         html.Div(id = 'csv-download-link', style = {'padding-left': '300px'}),
         html.Div(id = 'details-bd', style = {'padding-left': '300px', 'padding-right': '300px'})

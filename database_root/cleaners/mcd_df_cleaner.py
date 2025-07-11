@@ -96,82 +96,102 @@ def mcd_df_clean(mcd_df, hertz):
 import numpy as np
 
 #put the above function into chat gpt and told it to go nuts fixing it, and it seems to have worked pretty well so ima leave it and not take credit lol
-
+#i did have to fix a bunch of shit myself though tbf
 def gpt_clean(mcd_df, hertz):
-    # Drop fully empty columns
-    mcd_df = mcd_df.loc[:, ~mcd_df.isna().all()]
+    try:
+        low_qual = False
+        required_cols = ['Frame', 'Time (Seconds)']
+        missing = [col for col in required_cols if col not in mcd_df.columns]
+        if missing:
+            raise ValueError(f"Missing required columns: {missing}")
+        
+        mcd_df = mcd_df.sort_values("Time (Seconds)").drop_duplicates(subset="Time (Seconds)").reset_index(drop=True)
+        # Drop fully empty columns
+        mcd_df = mcd_df.loc[:, ~mcd_df.isna().all()]
 
-    mcd_repeat_col = ['Frame', 'Time (Seconds)']
+        mcd_repeat_col = ['Frame', 'Time (Seconds)']
 
-    # Determine interpolation columns
-    all_cols = mcd_df.columns.tolist()
-    last_repeat_index = all_cols.index(mcd_repeat_col[-1])
-    mcd_interp_col = all_cols[last_repeat_index + 1:]
+        # Determine interpolation columns
+        all_cols = mcd_df.columns.tolist()
+        last_repeat_index = all_cols.index(mcd_repeat_col[-1])
+        mcd_interp_col = all_cols[last_repeat_index + 1:]
 
-    # Precompute values
-    time_col = mcd_df["Time (Seconds)"].to_numpy()
-    interp_data = mcd_df[mcd_interp_col].to_numpy()
-    repeat_data = mcd_df[mcd_repeat_col].to_numpy()
+        # Precompute values
+        time_col = mcd_df["Time (Seconds)"].to_numpy()
+        interp_data = mcd_df[mcd_interp_col].to_numpy()
+        repeat_data = mcd_df[mcd_repeat_col].to_numpy()
 
-    # Output collection
-    new_rows = []
-    i = 0
+        # Output collection
+        new_rows = []
+        i = 0
 
-    while i < len(time_col):
-        if i == 0:
+        while i < len(time_col):
+            if i == 0:
+                i += 1
+                continue
+
+            t_start = time_col[i - 1]
+            t_end = time_col[i]
+            dt = t_end - t_start
+
+            if not np.isfinite(dt) or dt <= 0:
+                i += 1
+                continue
+            
+            #warning for low quality interpolation at low Hz where step values are forced
+            raw_steps = hertz * dt
+            steps = max(1, int(round(hertz * dt)))
+            if steps == 1 and raw_steps < 0.5:
+                low_qual = True
+            if steps < 1:
+                i += 1
+                continue
+
+            # Determine which columns are non-NaN across both rows
+            valid_mask = np.isfinite(interp_data[i - 1]) & np.isfinite(interp_data[i])
+            if not np.any(valid_mask):
+                i += 1
+                continue
+
+            slopes = np.zeros_like(interp_data[i - 1])
+            slopes[valid_mask] = (
+                (interp_data[i] - interp_data[i - 1])[valid_mask] / dt
+            )
+
+            t_values = np.linspace(0, dt, steps, endpoint=False)
+            for t_offset in t_values:
+                row = {}
+                for j, col in enumerate(mcd_interp_col):
+                    if valid_mask[j]:
+                        row[col] = round(interp_data[i - 1][j] + slopes[j] * t_offset, 2)
+                # repeat cols (no interpolation, just assign current row)
+                row["Frame"] = repeat_data[i][0]
+                row["Time (Seconds)"] = round(t_start + t_offset, 6)
+                new_rows.append(row)
+
             i += 1
-            continue
+        #debug
+        if not new_rows:
+            raise ValueError('No valid rows generated during interpolation - check time column or input df')
+        # Construct final dataframe
+        mcd_new_df = pd.DataFrame(new_rows)
 
-        t_start = time_col[i - 1]
-        t_end = time_col[i]
-        dt = t_end - t_start
-
-        if not np.isfinite(dt) or dt <= 0:
-            i += 1
-            continue
-
-        steps = int(round(hertz * dt))
-        if steps < 1:
-            i += 1
-            continue
-
-        # Determine which columns are non-NaN across both rows
-        valid_mask = np.isfinite(interp_data[i - 1]) & np.isfinite(interp_data[i])
-        if not np.any(valid_mask):
-            i += 1
-            continue
-
-        slopes = np.zeros_like(interp_data[i - 1])
-        slopes[valid_mask] = (
-            (interp_data[i] - interp_data[i - 1])[valid_mask] / dt
+        # Add time-from-start and on/off marker
+        mcd_new_df["Seconds into Build"] = np.round(
+            mcd_new_df["Time (Seconds)"] - mcd_new_df["Time (Seconds)"].iloc[0], 3
         )
+        mcd_new_df["On-Off"] = 1
 
-        t_values = np.linspace(0, dt, steps, endpoint=False)
-        for t_offset in t_values:
-            row = {}
-            for j, col in enumerate(mcd_interp_col):
-                if valid_mask[j]:
-                    row[col] = round(interp_data[i - 1][j] + slopes[j] * t_offset, 2)
-            # repeat cols (no interpolation, just assign current row)
-            row["Frame"] = repeat_data[i][0]
-            row["Time (Seconds)"] = round(t_start + t_offset, 6)
-            new_rows.append(row)
+        # Reorder columns
+        cols = list(mcd_new_df.columns)
+        cols.remove("Seconds into Build")
+        cols.insert(2, "Seconds into Build")
+        mcd_new_df = mcd_new_df[cols]
 
-        i += 1
-
-    # Construct final dataframe
-    mcd_new_df = pd.DataFrame(new_rows)
-
-    # Add time-from-start and on/off marker
-    mcd_new_df["Seconds into Build"] = np.round(
-        mcd_new_df["Time (Seconds)"] - mcd_new_df["Time (Seconds)"].iloc[0], 3
-    )
-    mcd_new_df["On-Off"] = 1
-
-    # Reorder columns
-    cols = list(mcd_new_df.columns)
-    cols.remove("Seconds into Build")
-    cols.insert(2, "Seconds into Build")
-    mcd_new_df = mcd_new_df[cols]
-
-    return mcd_new_df
+        return mcd_new_df, low_qual
+    
+    except Exception as e:
+        import traceback
+        print(f'[ERROR] gpt_clean(): {e}')
+        traceback.print_exc()
+        raise

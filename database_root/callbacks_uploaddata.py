@@ -82,6 +82,7 @@ def register_upload_callbacks(app):
         else:
             data = process_upload(contents, None)
             auto_adjusted = False
+            build_file = True
 
             #if user selects clean, need to make sure it's a csv and then find out what kind of csv to run which kind of cleaner function
             if cleaned_or_not == 'need-clean':
@@ -108,15 +109,18 @@ def register_upload_callbacks(app):
 
                             #check whether isd or mcd
                             if 'Force_1_Force (lbs.)' in data.columns:
+                                build_file = True
                                 data = isd_df_clean(data, sample_rate)
                                 print(f'In-situ data cleaned and reprocessed at {sample_rate} Hz')
 
                             else:
                                 #idk how to safely check for mcd since the column headers are so nondescriptive so im taking the easy way out
                                 try:
-                                    data = gpt_clean(data, sample_rate)
+                                    data, low_quality_interpolation = gpt_clean(data, sample_rate)
+                                    build_file = True
                                     print(f'Motion capture data cleaned and reprocessed at {sample_rate} Hz')
                                 except Exception as e:
+                                    build_file = False
                                     print(f"You can (probably) ignore this but I'm logging it: {e}")
                                     pass    #if this throws an error, its probably just a random csv and shouldnt go through a dedicated process func
                     
@@ -128,8 +132,15 @@ def register_upload_callbacks(app):
                     return html.Span('No content', style = {'color': 'red'}), '', ntng()
             
             try:
-                success = add_data(data, MASTER_FILE, parent_path, name, False)
+                success = add_data(data, MASTER_FILE, parent_path, name, False, build_file)
                 if success:
+
+                    if low_quality_interpolation:
+                        from utils.lock import master_lock
+                        with master_lock:
+                            with h5tbx.File(MASTER_FILE, 'a') as master:
+                                master[f'{parent_path}/{name}'].attrs['notice'] = 'Low quality interpolation (<= 5hz?)' 
+                        
                     if auto_adjusted:
                         return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}. Sample rate auto-adjusted to match build sample rate', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
                     else:
@@ -198,7 +209,7 @@ def register_upload_callbacks(app):
             data = process_upload(contents, None)
 
             try:
-                success = add_data(data, MASTER_FILE, parent_path, name, False)
+                success = add_data(data, MASTER_FILE, parent_path, name, False, False)
                 if success:
                     return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
                 else:
@@ -415,6 +426,12 @@ def register_upload_callbacks(app):
                 
                 path = f'/{alloy}/builds/{build_id}/machine_data'
                 parent = f'/{alloy}/builds/{build_id}'
+
+                from utils.lock import master_lock
+                with master_lock:
+                    with h5tbx.File(MASTER_FILE, 'a') as master:
+                        master[path].attrs['build_id'] = build_id   #give ~/machine_data "build_id" attribute
+
                 return html.Span(
                     f'Build file for {build_id} created and {filename} uploaded successfully to {path}', 
                     style = {'color': 'green'}

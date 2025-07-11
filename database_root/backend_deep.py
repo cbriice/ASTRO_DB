@@ -23,7 +23,7 @@ def add_group(master_file, parent_path: str, name: str) -> str:
 
 #should be able to handle all kinds of data and add them at any address specified by the user
 #ngl half of this function is probably useless but its one of the first things i coded and i was given no direction so fuck it
-def add_data(data, master_file, parent_path, name, data_isfilename: bool) -> bool:  #returns bool which indicates success of adding data
+def add_data(data, master_file, parent_path, name, data_isfilename: bool, build_file: bool = False) -> bool:  #returns bool which indicates success of adding data
     path = f'{parent_path}/{name}'
     
     #is the user passing a file path in the directory? this accesses the file instead of passing the string on to be stored literally
@@ -43,7 +43,7 @@ def add_data(data, master_file, parent_path, name, data_isfilename: bool) -> boo
         try:
             #dataframe
             if isinstance(data, pd.DataFrame):
-                save_df(master_file, parent_path, data, name)
+                save_df(master_file, parent_path, data, name, build_file)
                 print(f'Saved data as {type(data)} to {path}')
                 return True
             

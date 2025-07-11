@@ -10,24 +10,16 @@ import numpy as np
 from utils.lock import master_lock
 
 #save dataframe to database
-def save_df(master_file, build_path, df: pd.DataFrame, name='raw_csv_data'):
+def save_df(master_file, build_path, df: pd.DataFrame, name='raw_csv_data', build_file: bool = False):
     with master_lock:
         with h5tbx.File(master_file, 'a') as master:
             g = master.require_group(f'{build_path}/{name}')
             for col in df.columns:
                 data = df[col].values
                 g.create_dataset(name = col, data = data)
-
-#retrieve saved dataframe. would pass "machine_data" as name argument for example to reconstruct original machine csv from where it's saved
-def get_df(master_file, path, name):
-    with h5tbx.File(master_file, 'r') as master:
-        if f'{path}/{name}' in master:
-            g = path[name]
-            data = {col: g[col][:] for col in g.keys()}
-            return pd.DataFrame(data)
-        else:
-            print(f'[ERROR]: {path}/{name} doesnt exist in {master}. Returning type None')
-            return None
+            
+            if build_file:
+                g.attrs['build_id'] = build_path.split('/')[-1]
 
 import dash
 def ntng():

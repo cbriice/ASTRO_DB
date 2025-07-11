@@ -1,5 +1,5 @@
 from dash import dcc, html
-from utils.constants import MASTER_FILE
+from utils.constants import METRICS_MACHINEFILE, FORCE_METS, LTHFS_METS, HTHFS_METS, TC_METS
 
 def analysis_main():
     return html.Div([
@@ -7,8 +7,9 @@ def analysis_main():
         html.Div([
             html.Div([
                 html.Button('Load storage', id = 'load-storage', n_clicks = 0, style = {'backgroundColor': "#40b8fd"}),
-                html.Button('Clear storage', id = 'clear-storage', n_clicks = 0), html.Br(), html.Br()
-            ], style = {'padding-left': '800px'}),
+                html.Button('Clear storage', id = 'clear-storage', n_clicks = 0), 
+                html.Button('Create custom benchmark', id = 'custom-benchmark', n_clicks = 0), html.Br(), html.Br()
+            ], style = {'padding-left': '750px'}),
             html.Div(id = 'analysis-2')
         ], style = {'padding-left': '50px', 'padding-right': '50px', 'padding-bottom': '50px'})
     ])
@@ -42,3 +43,32 @@ def load_storage(path1, paths2, plot_data):
         html.Div(id = 'analysis-3-2')
     ])
 
+def custom_benchmark1():
+    return html.Div([
+        html.H6('Choose metrics to add to custom benchmark:'), html.Br(),
+        dcc.Dropdown(
+            id = 'choose-met-bench', 
+            options = [{'label': 'Machine file metrics', 'value': 'mach-mets'},
+                       {'label': ''}] 
+        )
+    ])
+
+def custom_benchmark2():
+    return html.Div([
+        html.Label('Machine file metrics'), html.Br(),
+        dcc.Checklist(
+            id = 'machinefile-mets-select', 
+            options = [{'label': m, 'value': m} for m in METRICS_MACHINEFILE],
+            labelStyle = {'width': '10%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '1px'}
+        ), html.Br()
+    ])
+
+def custom_benchmark_sensorops(i, ops):
+    return html.Div([
+        html.Label('Sensor file metrics'), html.Br(),
+        dcc.Checklist(
+            id = f'sensorfile-mets-select-{i}', 
+            options = [{'label': m, 'value': m} for m in ops],
+            labelStyle = {'width': '10%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '1px'}
+        )
+    ])

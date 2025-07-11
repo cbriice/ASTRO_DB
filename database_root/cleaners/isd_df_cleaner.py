@@ -49,8 +49,12 @@ def isd_df_clean(isd_df, hertz):
                         row[header] = isd_df[header].iloc[i]
                 # calculates an equal spacing according to the hertz for each column that need interpolation
                 for header in isd_interp_col:
-                    cleaned_header = header.replace("/",".per.")
-                    row[cleaned_header] = round((isd_slopes[header] * t + isd_initial_interp_value[header]),2)
+                    #cleaned_header = header.replace("/",".per.")
+                    #carson change: get rid of unit labels, makes databasing more streamlined
+                    split = header.split('(', 1)
+                    new_header = split[0].strip()
+
+                    row[new_header] = round((isd_slopes[header] * t + isd_initial_interp_value[header]),2)  #new_header instead of cleaned_header
                 new_rows.append(row)
                 t = t + (1/hertz)
             current_second = int(second)
