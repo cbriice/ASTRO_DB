@@ -47,27 +47,6 @@ def find_header_line(filepath):
             return i
     return 0
 
-#sample adjustment function to match sample rates of data
-def adjust_sample_rate(input_csv, target_hz):
-    f = pd.read_csv(input_csv)
-
-    target_sample = 1 / target_hz
-    f['Time'] = pd.to_timedelta('00' + f['Time'].astype(str))
-    f.set_index('Time', inplace=True)
-    f_resample = f.resample(f'{int(1000 * target_sample)}ms').asfreq()
-
-    continuous_cols = ['SpinVel', 'SpinTrq', 'SpinPwr', 
-                   'FeedVel', 'FeedPos', 'FeedTrq', 
-                   'PathVel', 'XPos', 'XVel', 'XTrq',
-                   'YPos', 'YVel', 'YTrq', 'ZVel', 'ZTrq',
-                   'Ktype1', 'Ktype2', 'Ktype3', 'Ktype4',
-                   'ToolTemp', 'Zscale']
-    f_resample[continuous_cols] = f_resample[continuous_cols].interpolate(method='linear')
-    discrete_cols = ['FRO', 'ZPos', 'Gcode', 'Low', 'High']
-    f_resample[discrete_cols] = f_resample[discrete_cols].ffill()
-
-    return f_resample
-
 #gets all attributes and returns list of strings for each k: v pair
 def get_atts_list(build_file):
     with h5tbx.File(build_file, 'r') as build:
