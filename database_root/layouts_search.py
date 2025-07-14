@@ -1,10 +1,10 @@
 from dash import dcc, html
 import dash_bootstrap_components as dbc
 from utils.helpers import get_all_att_keys
-from utils.constants import METRICS_MACHINEFILE, EXSITU_KEYS
+from utils.constants import METRICS_MACHINEFILE, EXSITU_KEYS, INSITU_METS
 
 def dropdown_search_layouts(category, ops = None):
-    if category == 'all' or category == 'autos' or category == 'exsitu': #dropdown layouts
+    if category == 'all' or category == 'autos' or category == 'exsitu' or category == 'insitu': #dropdown layouts
         return html.Div([
         html.H6('Choose an attribute to search for:'), 
         dcc.Dropdown(
@@ -111,6 +111,7 @@ def search_atts():
         dcc.RadioItems(
             id = 'att-filt-input',
             options = [{'label': 'Auto-assigned (machine)', 'value': 'aa-machine'},
+                       {'label': 'In-situ/Sensor attributes', 'value': 'insitu-search'},
                        {'label': 'Exsitu attributes', 'value': 'exsitu-search'},
                        {'label': 'Other attribute', 'value': 'manual-search'},
                        {'label': 'View all attributes', 'value': 'view-all-atts'}]
@@ -134,6 +135,13 @@ def search_exsitu():
         raw_exsitu_keys.extend(sublist)
 
     return dropdown_search_layouts('exsitu', sorted(raw_exsitu_keys))
+
+def search_insitu():
+    raw_insitu_keys = []
+    for sublist in INSITU_METS:
+        raw_insitu_keys.extend(sublist)
+
+    return dropdown_search_layouts('insitu', sorted(raw_insitu_keys))
 
 def result_search(result, att):
     return html.Div([

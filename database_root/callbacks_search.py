@@ -1,6 +1,6 @@
 from dash import dcc, html, Input, Output, State, ctx, MATCH
 from utils.data_compiler import compile_atts, compile_plot, reconstruct_df, export_csv
-from layouts_search import manual_search, search_all, search_autos, result_search, search_exsitu
+from layouts_search import manual_search, search_all, search_autos, result_search, search_exsitu, search_insitu
 import h5rdmtoolbox as h5tbx
 from utils.search_tools import search_for_att, show_datasets
 from utils.helpers import ntng
@@ -29,7 +29,7 @@ def try_process(path, master_file):
     except TypeError:
         return '', False
     
-
+#------------------------------ first section - browse database ------------------------------
 def register_search_callbacks(app):
     #show details from browse database section
     @app.callback(
@@ -156,7 +156,7 @@ def register_search_callbacks(app):
                 return html.Span(f'Failed to compile data from build at {path}. Check console', style = {'color': 'red'}), ''
 
         
-    #---------------------------------------------------------------- search page section
+    #------------------------------------------ search page section ------------------------
     @app.callback(
         Output('search-page-2', 'children'),
         Input('att-filt-input', 'value')
@@ -170,6 +170,8 @@ def register_search_callbacks(app):
             return search_all()
         elif choice == 'exsitu-search':
             return search_exsitu()
+        elif choice == 'insitu-search':
+            return search_insitu()
         
     @app.callback(
         [Output('search-page-manual', 'children'),

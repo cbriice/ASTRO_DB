@@ -97,6 +97,8 @@ TC_METS = ['TC_10_Temperature_min', 'TC_10_Temperature_max', 'TC_10_Temperature_
     'TC_8_Temperature_min', 'TC_8_Temperature_max', 'TC_8_Temperature_avg',
     'TC_9_Temperature_min', 'TC_9_Temperature_max', 'TC_9_Temperature_avg']
 
+INSITU_METS = [FORCE_METS, HTHFS_METS, LTHFS_METS, TC_METS]
+
 #------------------------------------------------------------------ attribute constants. dont even try to read or interpret this mess gang just trust me
 #for demo but mimicking real 
 X_OPS = [f'X{i}' for i in range(0, 7)]
