@@ -67,7 +67,7 @@ def browsedb_layout():
         ), 
         html.Div(id = 'end-of-chain', style = {'padding-left': '300px'}), 
         html.Div(id = 'selected-path', style = {'padding-left': '300px'}), html.Br(),
-        dcc.Store(id = 'selected-path-store', storage_type = 'memory'),
+        dcc.Store(id = 'selected-path-store', storage_type = 'session'),
 
         html.Div(
             dcc.Clipboard(
@@ -159,7 +159,7 @@ def uploadmachine_layout():
         ), html.Br(), html.Br(),
             
         html.Button('Submit', id = 'submit-machine-file', n_clicks = 0), html.Br(),
-        dcc.Store('path-for-atts-machine', storage_type = 'memory'),
+        dcc.Store('path-for-atts-machine', storage_type = 'session'),
         html.Div(id = 'upload-machine-result'), html.Br(),
         html.Div(id = 'att-upload-machine')
     ],

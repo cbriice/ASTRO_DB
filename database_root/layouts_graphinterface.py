@@ -14,7 +14,7 @@ def graphmain_layout():
         ),
         html.Button('Confirm', 'confirm-stacked', n_clicks = 0),
         html.Div(id = 'graph-page-2'),
-        dcc.Store(id = 'generated-plots', data = [], storage_type = 'memory')
+        dcc.Store(id = 'generated-plots', data = [], storage_type = 'session')
     ],
         style = {'padding-left': '35px'}
     )
@@ -32,10 +32,10 @@ def graphmain_individual():
             size = '50'
         ), 
         html.Div(id = 'graph-path-confirm'),
-        dcc.Store(id = 'graph-path', storage_type = 'memory'),
+        dcc.Store(id = 'graph-path', storage_type = 'session'),
 
         html.Button('Submit', id = 'submit-ind-graph-path', n_clicks = 0),
-        dcc.Store('graph-target-ops', storage_type = 'memory'),
+        dcc.Store('graph-target-ops', storage_type = 'session'),
         html.Div(id = 'graph-page-3')
     ])
 
@@ -95,7 +95,7 @@ def info_not_plotall(target_list):
             value = 'customary-true'
         ),
 
-        dcc.Store(id = 'npa-stored-plots', storage_type = 'memory'),
+        dcc.Store(id = 'npa-stored-plots', storage_type = 'session'),
         html.Button('Submit', id = 'submit-ind-graph-data', n_clicks = 0),
         html.Div(id = 'npa-graph-output'),
         html.Div(id = 'color-axis-shit')
@@ -145,7 +145,7 @@ def info_plotall():
             value = 'customary-true'
         ),
 
-        dcc.Store(id = 'pa-plot-list', storage_type = 'memory'),
+        dcc.Store(id = 'pa-plot-list', storage_type = 'session'),
         html.Button('Confirm', id = 'submit-all-graph-data', n_clicks = 0),
         html.Div(id = 'graph-page-5')
     ])
@@ -178,7 +178,7 @@ def graphmain_stacked():
         html.H6('Stored addresses:'),
         html.Div(id = 'stacker-current-list'), html.Br(),
         
-        dcc.Store(id = 'stackers', data = [], storage_type = 'memory'),
+        dcc.Store(id = 'stackers', data = [], storage_type = 'session'),
         html.Button('Show graph', id = 'submit-stackers', n_clicks = 0),
         html.Div(id = 'stacked-plot')
     ])

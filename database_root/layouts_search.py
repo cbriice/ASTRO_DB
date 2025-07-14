@@ -53,7 +53,7 @@ def dropdown_search_layouts(category, ops = None):
             style = {'backgroundColor': '#8af15a'}
         ), html.Br(),
 
-        dcc.Store(id = {'type': 'search-results', 'category': category}, storage_type = 'memory'),
+        dcc.Store(id = {'type': 'search-results', 'category': category}, storage_type = 'session'),
 
         html.Div(id = {'type': 'search-output', 'category': category})
     ])
@@ -100,7 +100,7 @@ def dropdown_search_layouts(category, ops = None):
         ), html.Br(), html.Br(),
 
         html.Button('Search', id = 'submit-manual-search', n_clicks = 0, style = {'backgroundColor': "#8af15a"}), html.Br(),
-        dcc.Store(id = 'results-manual', storage_type = 'memory'),
+        dcc.Store(id = 'results-manual', storage_type = 'session'),
         html.Div(id = 'search-page-manual')
     ])
 

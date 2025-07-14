@@ -14,7 +14,7 @@ def att_main():
                 size = '50'
             ), html.Br(),
             html.Button('Pull', id = 'pull-address-att', n_clicks = 0), html.Br(),
-            dcc.Store(id = 'user-address', storage_type = 'memory'),
+            dcc.Store(id = 'user-address', storage_type = 'session'),
             html.Div(id = 'att-page-2'), html.Br(),
             html.Div(id = 'att-page-3')
         ], style = {'padding-left': '300px'})
@@ -46,7 +46,7 @@ def add_att():
         html.Div(id = 'next-att-dropdown'),
         html.Div(id = 'next-next-att-dropdown'),
         html.Div(id = 'num-or-text-container'),
-        dcc.Store(id = 'att-key', storage_type = 'memory')
+        dcc.Store(id = 'att-key', storage_type = 'session')
     ])
 
 def att_dropdown(options, stage):

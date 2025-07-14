@@ -24,14 +24,14 @@ def uploaddata_layout():
         ], style = {'padding-left': '300px', 'padding-bottom': '35px'}),
         
         #just dont even worry about all this shit fr it works n thats all u need to know
-        dcc.Store(id ='parent-path-1', storage_type = 'memory'),
-        dcc.Store(id = 'name-upload-1', storage_type = 'memory'),
-        dcc.Store(id = 'parent-path-2', storage_type = 'memory'),
-        dcc.Store(id = 'name-upload-2', storage_type = 'memory'),
-        dcc.Store(id = 'parent-path-3', storage_type = 'memory'),
-        dcc.Store(id = 'name-upload-3', storage_type = 'memory'),
+        dcc.Store(id ='parent-path-1', storage_type = 'session'),
+        dcc.Store(id = 'name-upload-1', storage_type = 'session'),
+        dcc.Store(id = 'parent-path-2', storage_type = 'session'),
+        dcc.Store(id = 'name-upload-2', storage_type = 'session'),
+        dcc.Store(id = 'parent-path-3', storage_type = 'session'),
+        dcc.Store(id = 'name-upload-3', storage_type = 'session'),
 
-        dcc.Store(id = 'active-upload-source', storage_type = 'memory')
+        dcc.Store(id = 'active-upload-source', storage_type = 'session')
     ])
     
 
@@ -89,7 +89,7 @@ def upload_file_section(g_id):
         dcc.Input(id = 'sample-rate', type = 'number', placeholder = '1', step = 1), html.Br(), html.Br(),
         
         html.Button('Upload', id=f'submit-upload-{g_id}', n_clicks=0, style={'backgroundColor': "#b3f097"}),
-        dcc.Store(id=f'uploaded-filepath-{g_id}', storage_type='memory'),
+        dcc.Store(id=f'uploaded-filepath-{g_id}', storage_type='session'),
         html.Div(id=f'upload-status-{g_id}'), html.Br(),
         html.Div(id=f'attribute-adder-{g_id}')
     ])
@@ -226,7 +226,7 @@ def attribute_layout2(parent, path):
         ),
         html.Button('Confirm', id = 'submit-which-to-add-manual', n_clicks = 0),
         html.Div(id = 'manual-att-adder'),
-        dcc.Store(id = 'manual-choice', storage_type = 'memory')
+        dcc.Store(id = 'manual-choice', storage_type = 'session')
     ])
 
 def attribute_layout3():

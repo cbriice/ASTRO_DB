@@ -1,5 +1,5 @@
 from dash import dcc, html
-from utils.constants import METRICS_MACHINEFILE, FORCE_METS, LTHFS_METS, HTHFS_METS, TC_METS
+from utils.constants import METRICS_MACHINEFILE
 
 def analysis_main():
     return html.Div([
@@ -11,7 +11,8 @@ def analysis_main():
                 html.Button('Create custom benchmark', id = 'custom-benchmark', n_clicks = 0), html.Br(), html.Br()
             ], style = {'padding-left': '750px'}),
             html.Div(id = 'analysis-2')
-        ], style = {'padding-left': '50px', 'padding-right': '50px', 'padding-bottom': '50px'})
+        ], style = {'padding-left': '50px', 'padding-right': '50px', 'padding-bottom': '50px'}),
+        dcc.Store(id = 'benchmark-mets', storage_type = 'session')
     ])
 
 def load_storage(path1, paths2, plot_data):
@@ -49,11 +50,14 @@ def custom_benchmark1():
         dcc.Dropdown(
             id = 'choose-met-bench', 
             options = [{'label': 'Machine file metrics', 'value': 'mach-mets'},
-                       {'label': ''}] 
+                       {'label': 'Sensor file metrics', 'value': 'sens-mets'},
+                       {'label': 'Other metrics', 'value': 'other-mets'}],
+            placeholder = 'Select',
+            style = {'maxWidth': '200px'} 
         )
     ])
 
-def custom_benchmark2():
+def choose_machmets():
     return html.Div([
         html.Label('Machine file metrics'), html.Br(),
         dcc.Checklist(
@@ -63,7 +67,7 @@ def custom_benchmark2():
         ), html.Br()
     ])
 
-def custom_benchmark_sensorops(i, ops):
+def choose_sensormets(i, ops):
     return html.Div([
         html.Label('Sensor file metrics'), html.Br(),
         dcc.Checklist(
@@ -71,4 +75,9 @@ def custom_benchmark_sensorops(i, ops):
             options = [{'label': m, 'value': m} for m in ops],
             labelStyle = {'width': '10%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '1px'}
         )
+    ])
+
+def choose_othermets():
+    return html.Div([
+
     ])
