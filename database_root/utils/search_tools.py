@@ -159,13 +159,23 @@ def add_attribute(path, att_name, att_value, master_file):
 def conformance_comp(path1, path2, master_file):
     percent_list = []
     with h5tbx.File(master_file, 'r') as master:
-        node = master[path1]
-        node_atts = node.attrs.items()
+        #path1 is either a string path to a file or a dict of custom benchmark values
+        if isinstance(path1, str):
+            node = master[path1]
+            node_atts = node.attrs.items()
+        else:
+            node_atts = path1
         comp = master[path2]
 
-        for key, val in node_atts:
+        for key, val in node_atts.items():
             if key in comp.attrs:
-                percent = percent_diff(node.attrs[key], comp.attrs[key])
+                if isinstance(path1, str):
+                    percent = percent_diff(node.attrs[key], comp.attrs[key])
+                else:
+                    #print(f'Running comparison for [{key}: {val}]')
+                    #print(f'Comparison saved: {comp.attrs[key]}')
+                    percent = percent_diff(val, comp.attrs[key])
+
                 if percent is not None:
                     percent_list.append((key, percent))
                 else:

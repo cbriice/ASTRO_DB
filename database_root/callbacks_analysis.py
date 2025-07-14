@@ -1,7 +1,7 @@
-from utils.constants import MASTER_FILE, COLUMN_MAP_STANDARD
-from dash import dcc, html, Input, Output, State, ctx
+from utils.constants import MASTER_FILE, FORCE_METS, TC_METS, HTHFS_METS, LTHFS_METS
+from dash import dcc, html, Input, Output, State, ctx, ALL
 from utils.helpers import ntng, analysis_table
-from layouts_analysis import load_storage
+import layouts_analysis as la
 from utils.search_tools import conformance_comp
 import plotly.graph_objects as go
 
@@ -12,15 +12,16 @@ def register_analysis_callbacks(app):
          Output('global-storage-2', 'data'),
          Output('global-graph-storage', 'data', allow_duplicate= True)],
         [Input('load-storage', 'n_clicks'),
-         Input('clear-storage', 'n_clicks')],
+         Input('clear-storage', 'n_clicks'),
+         Input('custom-benchmark', 'n_clicks')],
         State('global-storage-1', 'data'),
         State('global-storage-2', 'data'),
         State('global-graph-storage', 'data'),
         prevent_initial_call = True
     )
-    def analysis_1(n1, n2, store1, store2, stored_plots):             #store1 is one path, store2 is a list of paths
+    def analysis_1(n1, n2, n3, store1, store2, stored_plots):             #store1 is one path, store2 is a list of paths
         trigg = ctx.triggered_id
-        if trigg is None or (n1 == 0 and n2 == 0):
+        if trigg is None or (n1 == 0 and n2 == 0 and n3 == 0):
             return '', ntng(), ntng(), ntng()
         
         if trigg == 'clear-storage':
@@ -28,9 +29,12 @@ def register_analysis_callbacks(app):
         
         elif trigg == 'load-storage':
             if (store1 and store2) or stored_plots:
-                return load_storage(store1, store2, stored_plots), ntng(), ntng(), ntng()
+                return la.load_storage(store1, store2, stored_plots), ntng(), ntng(), ntng()
             else:
                 return html.Span(f'Error: not enough data to load. 1: {store1} | 2: {store2} | 3: {stored_plots}'), ntng(), ntng(), ntng()
+        
+        elif trigg == 'custom-benchmark':
+            return la.custom_benchmark1(), ntng(), ntng(), ntng()
 
     @app.callback(
         Output('analysis-3', 'children'),
@@ -46,8 +50,13 @@ def register_analysis_callbacks(app):
             key_diffs = []
             normalized_diffs = []
             name_list = []
-            store1 = stored1[0]
-            name_1 = store1.split('/')[-1]
+
+            if isinstance(stored1, list):
+                store1 = stored1[0]
+                name_1 = store1.split('/')[-1]
+            else:
+                store1 = stored1
+                name_1 = 'Custom benchmark'
 
             for item in store2:
                 complist, normalized = conformance_comp(store1, item, MASTER_FILE)    #complist is list of (key, %diff) from comparison target (store1)
@@ -78,8 +87,7 @@ def register_analysis_callbacks(app):
             ])
         else:
             return html.Span('Not enough data provided for comparison summary.', style = {'color': 'red'})
-    #analysis - when user opens dataset up and explores items have program get min, max, avg values for specific data within dataset and display
-    #that for all datasets user analyzing. or something idk
+
 
     @app.callback(
         Output('analysis-3-2', 'children'),
@@ -122,3 +130,139 @@ def register_analysis_callbacks(app):
                 'justifyContent': 'center'
             }
         )
+    
+    #-------------custom benchmark creator callbacks--------------
+    @app.callback(
+        Output('custom-bench-1', 'children'),
+        Input('choose-met-bench', 'value')
+    )
+    def bench1(dd):
+        if dd is None:
+            return ''
+        if dd == 'mach-mets':
+            return la.choose_machmets()
+        elif dd == 'sens-mets':
+            return la.choose_sensorcat()
+        elif dd == 'other-mets':
+            return la.choose_othermets()
+    
+    @app.callback(
+        Output('sensor-checklist', 'children'),
+        Input('choose-sensor-cat', 'value')
+    )
+    def sencheck(cat):
+        if cat is None:
+            return ''
+        if cat == 'force': return la.choose_sensormets(FORCE_METS)
+        elif cat == 'hthfs': return la.choose_sensormets(HTHFS_METS)
+        elif cat == 'lthfs': return la.choose_sensormets(LTHFS_METS)
+        elif cat == 'therms': return la.choose_sensormets(TC_METS)
+        
+    #manually entered
+    @app.callback(
+        [Output('benchmark-mets', 'data', allow_duplicate= True),
+         Output('custom-bench-2', 'children', allow_duplicate= True)],
+        Input('add-other-mets', 'n_clicks'),
+        State('other-mets-met', 'value'),
+        State('benchmark-mets', 'data'),
+        prevent_initial_call = True
+    )
+    def register_other(n1, met, current_mets):
+        if n1 == 0:
+            return ntng(), ''
+        
+        if met:
+            current_mets.append(met)
+            return current_mets, html.Span(f'Stored metrics: {current_mets}')
+        else:
+            return ntng(), html.Span('Missing required information')
+    
+    #machine ops
+    @app.callback(
+        [Output('benchmark-mets', 'data', allow_duplicate=True),
+        Output('custom-bench-2', 'children', allow_duplicate=True)],
+        Input('add-mach-mets', 'n_clicks'),
+        State('machinefile-mets-select', 'value'),
+        State('benchmark-mets', 'data'),
+        prevent_initial_call=True
+    )
+    def confirm_machine_metrics(n_clicks, selected, current):
+        if n_clicks == 0:
+            return ntng(), ''
+        if current is None:
+            current = []
+        
+        updated = list(set(current + selected))
+        return updated, html.Span(f"Stored: {updated}")
+    
+    #sensor
+    @app.callback(
+        [Output('benchmark-mets', 'data', allow_duplicate=True),
+        Output('custom-bench-2', 'children', allow_duplicate=True)],
+        Input('add-sens-mets', 'n_clicks'),
+        State('sensorfile-mets-select', 'value'),
+        State('benchmark-mets', 'data'),
+        prevent_initial_call=True
+    )
+    def confirm_sensor_metrics(n_clicks, selected, current):
+        if n_clicks == 0:
+            return ntng(), ''
+        if current is None:
+            current = []
+        
+        updated = list(set(current + selected))
+        return updated, html.Span(f"Stored: {updated}")
+    
+    #clear selection 
+    @app.callback(
+        [Output('benchmark-mets', 'data', allow_duplicate=True),
+        Output('custom-bench-2', 'children', allow_duplicate=True),
+        Output('custom-bench-3', 'children', allow_duplicate=True)],
+        Input('clear-custom-bench', 'n_clicks'),
+        prevent_initial_call=True
+    )
+    def clear_metrics(n):
+        if n == 0:
+            return ntng(), '', ''
+        else:
+            return [], html.Span('Cleared stored metrics.'), ''
+    
+    #---now get values for metrics stored---
+    @app.callback(
+        Output('custom-bench-3', 'children'),
+        Input('submit-custom-metrics', 'n_clicks'),
+        State('benchmark-mets', 'data'),
+        prevent_initial_call=True
+    )
+    def show_input_fields(n, metrics):
+        if not metrics:
+            return html.Span("No metrics selected.")
+        
+        metrics = sorted(metrics)
+        inputs = [
+            html.Div([
+                html.Label(f"{m}: "),
+                html.Div(dcc.Input(id={'type': 'custom-bench-input', 'index': m}, type='text', placeholder='value'), style = {'marginLeft': '20px'})
+            ], style={'marginBottom': '10px'})
+            for m in metrics
+        ]
+        inputs.append(html.Button('Submit benchmark values', id='submit-custom-values', n_clicks=0, style = {'backgroundColor': "#acf879"}))
+        return inputs
+    
+    @app.callback(
+        [Output('custom-benchmark-container', 'data'),
+         Output('global-storage-1', 'data', allow_duplicate = True),
+         Output('custom-bench-4', 'children')],
+        Input('submit-custom-values', 'n_clicks'),
+        State('benchmark-mets', 'data'),
+        State({'type': 'custom-bench-input', 'index': ALL}, 'value'),
+        prevent_initial_call=True
+    )
+    def store_final_benchmark(n, metrics, values):
+        if not metrics or not values:
+            return {}, ntng(), ''
+        if n == 0:
+            return {}, ntng(), ''
+        
+        met_dict = {m: float(v) for m, v in zip(metrics, values)}
+        return met_dict, met_dict, html.Span(f'Stored {met_dict} to global benchmark storage for comparison. Ready for loading')
