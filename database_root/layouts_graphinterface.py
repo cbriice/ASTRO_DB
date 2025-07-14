@@ -157,7 +157,7 @@ def show_plotall(plots):
         dcc.Checklist(
             id = 'pa-plot-selector',
             options = generate_plot_list(plots),
-            labelStyle = {'width': '10%', 'display': 'inline-block', 'verticalAlign': 'top', 'padding': '1px'}
+            labelStyle = {'width': '20%', 'display': 'inline-block', 'verticalAlign': 'top', 'marginBottom': '6px', 'whiteSpace': 'normal'}
         ),
         html.Button('Show graphs', id = 'submit-pa-graph-choices', n_clicks = 0, 
                     style = {'padding-left': '100px', 'padding-right': '100px', 'backgroundColor': '#c8e9b8'}), html.Br(),
