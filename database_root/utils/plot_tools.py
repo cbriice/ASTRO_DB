@@ -270,6 +270,12 @@ def universal_decode(blob, fallback_encodings=['utf-8', 'latin1', 'windows-1252'
                 return blob.decode(enc)  #text
             except Exception:
                 continue
+        if isinstance(blob, bytes):
+            try:
+                blob.decode('utf-8', errors='ignore')
+                return blob
+            except Exception:
+                pass
         return blob  #fallback: return raw bytes if decode fails
     
     elif isinstance(blob, io.BytesIO):

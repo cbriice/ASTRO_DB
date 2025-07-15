@@ -63,8 +63,11 @@ def process_upload(contents, input_string):
                 try:
                     decoded_shit = universal_decode(decoded)
                     #clean more
+                    print(f'Type: {type(decoded_shit)}')
                     if isinstance(decoded_shit, bytes):
+                        print('universal_decode() output bytes')
                         decoded_shit = decoded_shit.decode('utf-8', errors ='ignore')
+                    print(f'Type after forcing: {type(decoded_shit)}')
                     decoded_shit = decoded_shit.replace('°', '') if isinstance(decoded_shit, str) else decoded_shit
 
                     sio = io.StringIO(decoded_shit)
