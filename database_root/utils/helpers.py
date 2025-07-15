@@ -81,19 +81,19 @@ def process_upload(contents, input_string):
                     print(f'Error decoding CSV: {e}')
                     return None
 
+            elif 'ms-excel' in content_type:
+                try:
+                    decoded_text = decoded.decode('utf-8', errors='ignore')
+                    if decoded_text.count(',') < 2:
+                        print('"ms-excel" formatted file does not have enough commas to be considered a .csv')
+                        pass
+                except Exception:
+                    return io.BytesIO(decoded)
+
             elif 'application' in content_type or 'image' in content_type:
                 return io.BytesIO(decoded)
 
             else:
-                if 'ms-excel' in content_type:
-                    try:
-                        decoded_text = decoded.decode('utf-8', errors='ignore')
-                        if decoded_text.count(',') < 2:
-                            print('"ms-excel" formatted file does not have enough commas to be considered a .csv')
-                            pass
-                    except Exception:
-                        return io.BytesIO(decoded)
-                    
                 try:
                     return io.StringIO(decoded.decode('utf-8'))
                 except UnicodeDecodeError:
