@@ -82,7 +82,9 @@ def process_upload(contents, input_string):
                     return None
 
             elif 'ms-excel' in content_type:
+                print('Entering ms-excel block:')
                 try:
+                    print('Attempting decode...')
                     decoded_text = decoded.decode('utf-8', errors='ignore')
                     if decoded_text.count(',') < 2:
                         print('"ms-excel" formatted file does not have enough commas to be considered a .csv')

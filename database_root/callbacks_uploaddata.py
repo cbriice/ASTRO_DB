@@ -89,7 +89,7 @@ def register_upload_callbacks(app):
             if cleaned_or_not == 'need-clean':
                 content_type, content = contents.split(',', 1)
                 if content_type:
-                    if content_type.startswith('data:text/csv'): #process_upload will have output a dataframe so now we can proceed with cleaning
+                    if content_type.startswith('data:text/csv') or 'ms-excel' in content_type: #process_upload will have output a dataframe so now we can proceed with cleaning
                         if sample_rate:
                             if sample_rate > 20:
                                 return html.Span('Specified sample rate is too high (should be <=20)', style = {'color': 'red'}), '', ntng()
