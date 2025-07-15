@@ -53,7 +53,7 @@ def process_upload(contents, input_string):
 
         if content and content_type:
             #cleaning up base64 encoding in case it breaks somewhere
-            cleaned_content = content.strip().replace('°', '').replace('\r\n', '\n').replace('\r', '\n')
+            cleaned_content = content.strip().replace('\n', '').replace('\r', '')
             missing_padding = len(cleaned_content) % 4
             if missing_padding:
                 cleaned_content = cleaned_content + '=' * (4 - missing_padding)
@@ -62,6 +62,7 @@ def process_upload(contents, input_string):
             if content_type.startswith('data:text/csv'):
                 try:
                     decoded_shit = universal_decode(decoded)
+                    decoded_shit = decoded_shit.replace('°', '') if isinstance(decoded_shit, str) else decoded_shit
                     sio = io.StringIO(decoded_shit)
                     header_row = find_header_line(sio)
                     #print(header_row)
