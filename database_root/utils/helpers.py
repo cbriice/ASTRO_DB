@@ -68,7 +68,7 @@ def process_upload(contents, input_string):
                     print(f'Type: {type(decoded_shit)}')
                     if isinstance(decoded_shit, bytes):
                         print('universal_decode() output bytes')
-                        decoded_shit = decoded_shit.decode('utf-8', errors ='ignore')
+                        decoded_shit = decoded_shit.decode('utf-8', errors ='replace')
                     print(f'Type after forcing: {type(decoded_shit)}')
                     decoded_shit = decoded_shit.replace('°', '') if isinstance(decoded_shit, str) else decoded_shit
 
@@ -85,7 +85,7 @@ def process_upload(contents, input_string):
                 print('Entering ms-excel block:')
                 try:
                     print('Attempting decode...')
-                    decoded_text = decoded.decode('utf-8', errors='ignore')
+                    decoded_text = decoded.decode('utf-8', errors='replace')
                     if decoded_text.count(',') < 2:
                         print('"ms-excel" formatted file does not have enough commas to be considered a .csv')
                         pass
