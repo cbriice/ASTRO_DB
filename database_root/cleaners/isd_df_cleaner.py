@@ -96,12 +96,18 @@ import numpy as np
 def vectorized_isd_df_clean(isd_df: pd.DataFrame, hertz: float) -> pd.DataFrame:
     isd_interp_col = ['TC_5_Temperature (°C)','TC_6_Temperature (°C)','TC_7_Temperature (°C)','TC_8_Temperature (°C)','TC_9_Temperature (°C)',
                       'TC_10_Temperature (°C)','TC_11_Temperature (°C)','TC_12_Temperature (°C)','TC_13_Temperature (°C)','TC_14_Temperature (°C)',
-                      'LTHFS_1_HeatFlux (W/m²)','LTHFS_1_Temperature (°C)','LTHFS_2_HeatFlux (W/m²)','LTHFS_2_Temperature (°C)',
-                      'LTHFS_3_HeatFlux (W/m²)','LTHFS_3_Temperature (°C)','LTHFS_4_HeatFlux (W/m²)','LTHFS_4_Temperature (°C)',
-                      'LTHFS_5_HeatFlux (W/m²)','LTHFS_5_Temperature (°C)','Force_1_Force (lbs.)','Force_2_Force (lbs.)',
-                      'Force_3_Force (lbs.)','Force_4_Force (lbs.)','Force_5_Force (lbs.)','HTHFS_1_HeatFlux (W/m²)',
+                      'LTHFS_1_HeatFlux (W·m^-2)','LTHFS_1_Temperature (°C)','LTHFS_2_HeatFlux (W·m^-2)','LTHFS_2_Temperature (°C)',
+                      'LTHFS_3_HeatFlux (W·m^-2)','LTHFS_3_Temperature (°C)','LTHFS_4_HeatFlux (W·m^-2)','LTHFS_4_Temperature (°C)',
+                      'LTHFS_5_HeatFlux (W·m^-2)','LTHFS_5_Temperature (°C)','Force_1_Force (lbs.)','Force_2_Force (lbs.)',
+                      'Force_3_Force (lbs.)','Force_4_Force (lbs.)','Force_5_Force (lbs.)','HTHFS_1_HeatFlux (W·m^-2)',
                       'HTHFS_1_Top_Temperature (°C)','HTHFS_1_Bottom_Temperature (°C)','HTHFS_1_Average_Temperature (°C)','Total_Force (lbs.)']
     isd_repeat_col = ['S.No.','Date&Time','Time','Start_Button_Voltage (V)']
+
+    #skip missing columns
+    isd_interp_col = [col for col in isd_interp_col if col in isd_df.columns]
+    missing = [col for col in isd_interp_col if col not in isd_df.columns]
+    if missing:
+        print(f'[WARNING] Skipping missing columns: {missing}')
 
     time_split = isd_df["Time"].str.split(":", expand=True).astype(float)
     time_sec = time_split[0]*3600 + time_split[1]*60 + time_split[2]

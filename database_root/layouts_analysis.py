@@ -38,9 +38,15 @@ def load_storage(path1, paths2, plot_data):
         html.Ul(paths2_list), 
         html.H6('Stored plots:'),
         html.Ul(stored_sources), html.Br(),
+
         html.Button('Generate comparison summary', id = 'gen-comp-summary', n_clicks = 0), 
         html.Button('Load graphs', id = 'load-plots', n_clicks = 0),
-        html.Br(),
+        html.Br(), html.Br(),
+
+        html.Label('To search for similar builds to benchmark, enter desired normalized difference threshold (in percentage):'),
+        dcc.Input(id = 'norm-threshold', type = 'number', size = '30'),
+        html.Button('Search', id = 'search-custom-benchmark', n_clicks = 0), html.Br(), html.Br(),
+
         html.Div(id = 'analysis-3'),
         html.Div(id = 'analysis-3-2')
     ])

@@ -4,6 +4,7 @@ from utils.helpers import ntng, analysis_table
 import layouts_analysis as la
 from utils.search_tools import conformance_comp
 import plotly.graph_objects as go
+import h5rdmtoolbox as h5tbx
 
 def register_analysis_callbacks(app):
     @app.callback(
@@ -266,3 +267,41 @@ def register_analysis_callbacks(app):
         
         met_dict = {m: float(v) for m, v in zip(metrics, values)}
         return met_dict, met_dict, html.Span(f'Stored {met_dict} to global benchmark storage for comparison. Ready for loading')
+    
+    #----------searching within analysis tab------------
+    @app.callback(
+        Output('benchmark-search-results', 'children'),
+        Input('search-custom-benchmark', 'n_clicks'),
+        State('custom-benchmark-container', 'data'),
+        State('norm-threshold', 'value'),            #add layout - button, input for threshold of normalized
+        prevent_initial_call=True
+    )
+    def search_db_with_benchmark(n, custom_bench, threshold):
+        if n == 0:
+            return ''
+        
+        if not custom_bench:
+            return html.Span('No custom benchmark provided.', style={'color': 'red'})
+
+        matches = []
+        with h5tbx.File(MASTER_FILE, 'r') as f:
+            for path in f:
+                try:
+                    complist, norm = conformance_comp(custom_bench, path, MASTER_FILE)
+                    if norm < threshold:
+                        matches.append((path, complist, norm))
+                except Exception as e:
+                    print(f"Error comparing with {path}: {e}")
+
+        if not matches:
+            return html.Span('No matching entries found.')
+
+        rendered = []
+        for path, diffs, norm in matches:
+            table = analysis_table(diffs, norm)
+            rendered.append(html.Div([
+                html.Label(f'Match: {path}'),
+                table, html.Hr()
+            ]))
+
+        return html.Div(rendered)
