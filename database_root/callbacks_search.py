@@ -128,25 +128,17 @@ def register_search_callbacks(app):
                                 mcd_df = df
                             else:
                                 print(f'Duplicate MCD file found at {path}. Using first one found')
-
-                    if machine_df is not None and isd_df is not None and mcd_df is not None:
-                        try:
-                            merged_df = merge_isd_mcd_md_df(isd_df, mcd_df, machine_df)
-                            merged_filename = f"{path.split('/')[-1]}-merged.csv"
-                            print(f'Successfully generated {merged_filename}')
-                            redirect = export_csv(merged_df, merged_filename)
-                        except Exception as e:
-                            return html.Span(f'Error merging dataframes: {e}', style = {'color': 'red'}), ''
-                        
-                        link = html.A('Click to download merged CSV', href = redirect, target = '_blank')
-                        return html.Span(f'Build files at {path} merged and exported to {merged_filename}', style = {'color': 'green'}), link
-
-                    else:
-                        missing = []
-                        if mcd_df is None: missing.append('mcd')
-                        if isd_df is None: missing.append('isd')
-                        if machine_df is None: missing.append('machine')
-                        return html.Span(f'Not enough valid files found at {path} to construct combined csv. Missing: {missing}', style = {'color': 'red'}), ''
+                    
+                    try:
+                        merged_df = merge_isd_mcd_md_df(isd_df, mcd_df, machine_df)
+                        merged_filename = f"{path.split('/')[-1]}-merged.csv"
+                        print(f'Successfully generated {merged_filename}')
+                        redirect = export_csv(merged_df, merged_filename)
+                    except Exception as e:
+                        return html.Span(f'Error merging dataframes: {e}', style = {'color': 'red'}), ''
+                    
+                    link = html.A('Click to download merged CSV', href = redirect, target = '_blank')
+                    return html.Span(f'Build files at {path} merged and exported to {merged_filename}', style = {'color': 'green'}), link
                 
                 else:
                     return html.Span(f'Unable to process request: Files under this group are likely missing "build_id" attribute. Add this under "Add attributes"'), ''
