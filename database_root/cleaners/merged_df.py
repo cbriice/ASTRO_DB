@@ -14,9 +14,9 @@ def merge_dataframes(isd, mcd, md):
     
 
 def merge_isd_mcd_md_df(isd_new_df, mcd_new_df, md_new_df):
-    isd_new_df = isd_new_df.groupby("Seconds into Build").mean(numeric_only=True).reset_index() if isd_new_df else None
-    mcd_new_df = mcd_new_df.groupby("Seconds into Build").mean(numeric_only=True).reset_index() if mcd_new_df else None
-    md_new_df = md_new_df.groupby("Seconds into Build").mean(numeric_only=True).reset_index()   if md_new_df else None
+    isd_new_df = isd_new_df.groupby("Seconds into Build").mean(numeric_only=True).reset_index() if isd_new_df is not None else None
+    mcd_new_df = mcd_new_df.groupby("Seconds into Build").mean(numeric_only=True).reset_index() if mcd_new_df is not None else None
+    md_new_df = md_new_df.groupby("Seconds into Build").mean(numeric_only=True).reset_index()   if md_new_df is not None else None
 
     # merge dataframes
     merged_df = merge_dataframes(isd_new_df, mcd_new_df, md_new_df)
