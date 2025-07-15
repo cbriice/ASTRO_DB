@@ -89,6 +89,11 @@ def process_upload(contents, input_string):
                     if decoded_text.count(',') < 2:
                         print('"ms-excel" formatted file does not have enough commas to be considered a .csv')
                         pass
+                    sio = io.StringIO(decoded_shit)
+                    header_row = find_header_line(sio)
+                    sio.seek(0)
+                    return pd.read_csv(sio, skiprows = header_row)
+                
                 except Exception:
                     return io.BytesIO(decoded)
 

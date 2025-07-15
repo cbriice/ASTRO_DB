@@ -81,6 +81,7 @@ def register_upload_callbacks(app):
         
         else:
             data = process_upload(contents, None)
+            print(f'Datatype after processing callback: {type(data)}')
             auto_adjusted = False
             build_file = True
             low_quality_interpolation = False
