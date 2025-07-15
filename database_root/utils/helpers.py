@@ -53,7 +53,7 @@ def process_upload(contents, input_string):
 
         if content and content_type:
             #cleaning up base64 encoding in case it breaks somewhere
-            cleaned_content = content.strip().replace('\n', '').replace('\r', '')
+            cleaned_content = content.strip().replace('°', '').replace('\r\n', '\n').replace('\r', '\n')
             missing_padding = len(cleaned_content) % 4
             if missing_padding:
                 cleaned_content = cleaned_content + '=' * (4 - missing_padding)
