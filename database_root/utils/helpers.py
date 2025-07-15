@@ -62,7 +62,11 @@ def process_upload(contents, input_string):
             if content_type.startswith('data:text/csv'):
                 try:
                     decoded_shit = universal_decode(decoded)
+                    #clean more
+                    if isinstance(decoded_shit, bytes):
+                        decoded_shit = decoded_shit.decode('utf-8', errors ='ignore')
                     decoded_shit = decoded_shit.replace('°', '') if isinstance(decoded_shit, str) else decoded_shit
+
                     sio = io.StringIO(decoded_shit)
                     header_row = find_header_line(sio)
                     #print(header_row)
