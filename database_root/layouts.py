@@ -10,7 +10,8 @@ def edit_db_layout():
         html.H4("Edit database", style = {'text-align': 'center'}), 
         html.Div([
             html.Button('Create a folder', id = 'create-folder', n_clicks = 0),
-            html.Button('Delete/move files', id = 'del-or-move', n_clicks = 0), html.Br(), html.Br()
+            html.Button('Delete/move files', id = 'del-or-move', n_clicks = 0), 
+            html.Button('Temp fix: add start column', id = 'add-start-col', n_clicks = 0), html.Br(), html.Br()
         ], style = {'textAlign': 'center'}),
         html.Div(id = 'edit-db-container')
     ])
@@ -52,6 +53,26 @@ def del_or_move():
         html.Button('Delete', id = 'delete-sm', n_clicks = 0), html.Br(),
         html.Div(id = 'edit-page-2')
     ], style = {'padding-left': '300px'})
+
+def start_col1():
+    return html.Div([
+        html.Label('column number and file:'), 
+        dcc.Input(id = 'col-index', type = 'number', placeholder=0), html.Br(),
+        dcc.Upload(
+            id=f'upload-newcol',
+            children=html.Div(html.A('Select Files')), 
+            style={
+                'width': '30%',
+                'height': '60px',
+                'lineHeight': '60px',
+                'borderWidth': '2px',
+                'borderStyle': 'solid'
+            },
+            multiple=False
+        ), html.Br(),
+        html.Button('Generate', id='generate-col', n_clicks=0), html.Br(),
+        html.Div(id='col-gen-confirmation')
+    ], style = {'textAlign': 'center'})
 
 #----------------------------------------------------------
 def browsedb_layout():

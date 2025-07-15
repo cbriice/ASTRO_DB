@@ -170,25 +170,25 @@ def process_data_for_preview(path, master_file):
             return None, False
 
 def percent_diff(num1, num2):
-    if isinstance(num1, (int, float)) and isinstance(num2, (int, float)):
-        if (num1 == 0 and num2 != 0) or (num2 == 0 and num1 != 0):
-            diff = 100
-        elif num1 == num2 == 0:
-            diff = 0
-        else: 
+    if isinstance(num1, (int, float, np.int32, np.float64)) and isinstance(num2, (int, float, np.int32, np.float64)):
+        if num1 == 0:
+            if num2 == 0:
+                diff = 0
+            else:
+                diff = 100
+        else:
             diff = ((num2 - num1) / num1) * 100
         return round(diff, 1)
-    
     else:
-        if num1 == num2:
-            return 'Same'
-        else:
-            return 'Different'
+        return 'Same' if num1 == num2 else 'Different'
     
 def magnitude(vec):
     if isinstance(vec[0], tuple):
         vals = [v for _, v in vec if isinstance(v, (int, float))]
-        mag = np.sqrt(sum(v * v for v in vals) / len(vals))
+        if vals:
+            mag = np.sqrt(sum(v * v for v in vals) / len(vals))
+        else:
+            return 0
         return round(mag, 1)
     else:
         mag = np.sqrt(sum(vec[i] * vec[i] for i in vec))

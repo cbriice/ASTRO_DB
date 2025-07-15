@@ -99,7 +99,7 @@ def register_upload_callbacks(app):
                             
                             #sample rate stored as attribute on build. sample rate should be constant for all files associated with one build. handles this automatically
                             try:
-                                print(f'Looking for sample rate attribute in {parent_path}/machine_data to match...')
+                                print(f'Looking for sample rate attribute in {parent_path} to match...')
                                 with h5tbx.File(MASTER_FILE, 'r') as master:
                                     build_node = master[parent_path]
                                     sample_att = build_node.attrs['sample_rate']
@@ -148,7 +148,7 @@ def register_upload_callbacks(app):
                     else:
                         return html.Span(f'Data {name} added to {parent_path} in {MASTER_FILE}.', style={'color': 'green'}), lud.attribute_layout1(), f'{parent_path}/{name}'
                 else:
-                    return html.Span(f'Failed to add {name} to {parent_path}. Check console for what happened', style={'color': 'red'}), '', ntng()
+                    return html.Span(f'Failed to add {name} to {parent_path}. Make sure there are no naming conflicts (program will return this message instead of overwriting)', style={'color': 'red'}), '', ntng()
             except Exception as e:
                 return html.Span(f'upload attempt shit the bed somehow. {e}', style={'color': 'red'}), '', ntng()
             

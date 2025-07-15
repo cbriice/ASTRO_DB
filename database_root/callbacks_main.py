@@ -1,6 +1,6 @@
 import dash, requests, h5py
 from dash import dcc, html, Input, Output, State, ctx, ALL
-from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout, admin_layout, edit_db_layout, del_or_move
+from layouts import creategroup_layout, browsedb_layout, uploadmachine_layout, admin_layout, edit_db_layout, del_or_move, start_col1
 from backend_deep import add_data, add_group
 from utils.constants import MAIN_MENU_OPS, MASTER_FILE
 from utils.helpers import ntng, get_keys, confirm_edit
@@ -50,9 +50,10 @@ def register_main_callbacks(app):
     @app.callback(
         Output('edit-db-container', 'children'),
         [Input('create-folder', 'n_clicks'),
-         Input('del-or-move', 'n_clicks')]
+         Input('del-or-move', 'n_clicks'),
+         Input('add-start-col', 'n_clicks')]
     )
-    def edit_db_landing(n1, n2):
+    def edit_db_landing(n1, n2, n3):
         trigg = ctx.triggered_id
         if trigg is None:
             return ''
@@ -61,6 +62,8 @@ def register_main_callbacks(app):
             return creategroup_layout()
         elif trigg == 'del-or-move':
             return del_or_move()
+        elif trigg == 'add-start-col':
+            return start_col1()
 
     @app.callback(
         Output('group-creation-output', 'children'),
@@ -172,6 +175,32 @@ def register_main_callbacks(app):
                         return html.Span(f'Data at {old_path} was unable to be copied to {new_path}', style = {'color': 'red'})
         else:
             return html.Span(f'{old_path} is too high level to be moved. Force canceling', style = {'color': 'red'})
+        
+    from utils.helpers import process_upload
+    from utils.data_compiler import export_csv
+    @app.callback(
+        Output('col-gen-confirmation', 'children'),
+        Input('generate-col', 'n_clicks'),
+        State('col-index', 'value'),
+        State('upload-newcol', 'contents'),
+        State('upload-newcol', 'filename')
+    )
+    def colgen(n, idx, contents, filename):
+        if n == 0: 
+            return ''
+        
+        df = process_upload(contents, None)
+        df['Start_Button'] = 0.0
+
+        if 0 <= idx < len(df):
+            df.at[idx, 'Start_Button'] = 4.7
+        else:
+            return html.Span('Index out of bounds')
+        
+        redirect = export_csv(df, filename)
+        link = html.A('New csv download', href=redirect, target='_blank')
+        return link
+        
 
 #-------------------------------------------------------------------------
 #callbacks for dynamic dropdowns

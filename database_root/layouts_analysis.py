@@ -13,6 +13,9 @@ def analysis_main():
             html.Div(id = 'analysis-2')
         ], style = {'padding-left': '50px', 'padding-right': '50px', 'padding-bottom': '50px'}),
         dcc.Store(id = 'benchmark-mets', storage_type = 'session', data = []),
+        dcc.Store(id='machine-mets-store', data=[], storage_type='session'),
+        dcc.Store(id='sensor-mets-store', data=[], storage_type='session'),
+        dcc.Store(id='other-mets-store', data=[], storage_type='session'),
         dcc.Store(id = 'custom-benchmark-container', storage_type = 'session')
     ])
 

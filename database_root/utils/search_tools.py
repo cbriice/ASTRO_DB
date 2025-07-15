@@ -172,9 +172,10 @@ def conformance_comp(path1, path2, master_file):
                 if isinstance(path1, str):
                     percent = percent_diff(node.attrs[key], comp.attrs[key])
                 else:
-                    #print(f'Running comparison for [{key}: {val}]')
-                    #print(f'Comparison saved: {comp.attrs[key]}')
+                    #print(f'Running comparison for [{key}: {val}], {type(val)}')
+                    #print(f'Comparison saved: {comp.attrs[key]}, {type(comp.attrs[key])}')
                     percent = percent_diff(val, comp.attrs[key])
+                    #print(f'diff obtained: {percent}')
 
                 if percent is not None:
                     percent_list.append((key, percent))
@@ -183,5 +184,6 @@ def conformance_comp(path1, path2, master_file):
             else:
                 print(f'Skipping {key}: not in comparison build')
 
+    #print(percent_list)
     normalized_diff = magnitude(percent_list)
     return percent_list, normalized_diff

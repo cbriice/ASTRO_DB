@@ -161,58 +161,53 @@ def register_analysis_callbacks(app):
         
     #manually entered
     @app.callback(
-        [Output('benchmark-mets', 'data', allow_duplicate= True),
-         Output('custom-bench-2', 'children', allow_duplicate= True)],
+        [Output('other-mets-store', 'data'),
+         Output('custom-bench-2', 'children', allow_duplicate=True)],
         Input('add-other-mets', 'n_clicks'),
         State('other-mets-met', 'value'),
-        State('benchmark-mets', 'data'),
-        prevent_initial_call = True
+        prevent_initial_call=True
     )
-    def register_other(n1, met, current_mets):
-        if n1 == 0:
+    def store_other(n, val):
+        if n == 0:
             return ntng(), ''
-        
-        if met:
-            current_mets.append(met)
-            return current_mets, html.Span(f'Stored metrics: {current_mets}')
-        else:
-            return ntng(), html.Span('Missing required information')
+        return ([val] if val else []), f'Stored: {val}'
     
     #machine ops
     @app.callback(
-        [Output('benchmark-mets', 'data', allow_duplicate=True),
-        Output('custom-bench-2', 'children', allow_duplicate=True)],
+        [Output('machine-mets-store', 'data'),
+         Output('custom-bench-2', 'children', allow_duplicate=True)],
         Input('add-mach-mets', 'n_clicks'),
         State('machinefile-mets-select', 'value'),
-        State('benchmark-mets', 'data'),
         prevent_initial_call=True
     )
-    def confirm_machine_metrics(n_clicks, selected, current):
-        if n_clicks == 0:
+    def store_machine(n, selected):
+        if n == 0: 
             return ntng(), ''
-        if current is None:
-            current = []
-        
-        updated = list(set(current + selected))
-        return updated, html.Span(f"Stored: {updated}")
+        return (selected or []), f'Stored: {selected}'
     
     #sensor
     @app.callback(
-        [Output('benchmark-mets', 'data', allow_duplicate=True),
-        Output('custom-bench-2', 'children', allow_duplicate=True)],
+        [Output('sensor-mets-store', 'data'),
+         Output('custom-bench-2', 'children', allow_duplicate=True)],
         Input('add-sens-mets', 'n_clicks'),
         State('sensorfile-mets-select', 'value'),
-        State('benchmark-mets', 'data'),
         prevent_initial_call=True
     )
-    def confirm_sensor_metrics(n_clicks, selected, current):
-        if n_clicks == 0:
+    def store_sensor(n, selected):
+        if n == 0:
             return ntng(), ''
-        if current is None:
-            current = []
-        
-        updated = list(set(current + selected))
-        return updated, html.Span(f"Stored: {updated}")
+        return (selected or []), f'Stored: {selected}'
+    
+    #combine
+    @app.callback(
+        Output('benchmark-mets', 'data'),
+        Input('machine-mets-store', 'data'),
+        Input('sensor-mets-store', 'data'),
+        Input('other-mets-store', 'data')
+    )
+    def combine_mets(machine, sensor, other):
+        combined = (machine or []) + (sensor or []) + (other or [])
+        return list(dict.fromkeys(combined))
     
     #clear selection 
     @app.callback(
@@ -269,6 +264,8 @@ def register_analysis_callbacks(app):
         return met_dict, met_dict, html.Span(f'Stored {met_dict} to global benchmark storage for comparison. Ready for loading')
     
     #----------searching within analysis tab------------
+    from utils.search_tools import search_for_att
+    
     @app.callback(
         Output('benchmark-search-results', 'children'),
         Input('search-custom-benchmark', 'n_clicks'),
@@ -283,21 +280,12 @@ def register_analysis_callbacks(app):
         if not custom_bench:
             return html.Span('No custom benchmark provided.', style={'color': 'red'})
 
-        matches = []
-        with h5tbx.File(MASTER_FILE, 'r') as f:
-            for path in f:
-                try:
-                    complist, norm = conformance_comp(custom_bench, path, MASTER_FILE)
-                    if norm < threshold:
-                        matches.append((path, complist, norm))
-                except Exception as e:
-                    print(f"Error comparing with {path}: {e}")
-
-        if not matches:
-            return html.Span('No matching entries found.')
+        #unfinished - logic to run the search in efficient way because this is probably shit
+        for key, val in custom_bench.items():
+            results = search_for_att(MASTER_FILE, att=val, groupsonly=False, lowerbound=None, upperbound=None, exactvalue=None)
 
         rendered = []
-        for path, diffs, norm in matches:
+        for path, diffs, norm in results:
             table = analysis_table(diffs, norm)
             rendered.append(html.Div([
                 html.Label(f'Match: {path}'),
