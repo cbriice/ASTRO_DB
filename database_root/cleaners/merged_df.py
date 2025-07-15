@@ -1,14 +1,14 @@
 import pandas as pd
 
 def merge_dataframes(isd, mcd, md):
-    if not md:
+    if md is None:
         print('No machine file found')
         return None
     
-    if isd and md and not mcd:
+    if isd is not None and md is not None and mcd is None:
         print('Reconstructing build data without motion capture data')
         return isd.merge(md, on="Seconds into Build", how="outer", suffixes=("_isd", "_md"))
-    elif mcd and md and not isd:
+    elif mcd is not None and md is not None and isd is None:
         print('Reconstructing build data without in-situ data')
         return mcd.merge(md, on="Seconds into Build", how="outer", suffixes=("_isd", "_md"))
     
