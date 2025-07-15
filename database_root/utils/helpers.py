@@ -42,6 +42,7 @@ def get_keys(file, master_file):
 
 #helper for data upload to decide what type of file it is and how to output to be handled by add_data()
 def process_upload(contents, input_string):
+    print(f"[DEBUG] Raw contents: {contents[:100]}")
     if contents is None:
         return input_string
     else:
@@ -52,6 +53,7 @@ def process_upload(contents, input_string):
             content = None
 
         if content and content_type:
+            print(f"[DEBUG] content_type: {content_type}")
             #cleaning up base64 encoding in case it breaks somewhere
             cleaned_content = content.strip().replace('\n', '').replace('\r', '')
             missing_padding = len(cleaned_content) % 4
