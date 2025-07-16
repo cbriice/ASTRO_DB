@@ -163,17 +163,17 @@ def conformance_comp(path1, path2, master_file):
         if isinstance(path1, str):
             node = master[path1]
             node_atts = node.attrs.items()
+            iterable = node_atts
         else:
             node_atts = path1
+            iterable = node_atts.items()
         comp = master[path2]
-
-        for key, val in node_atts.items():
+        
+        for key, val in iterable:
             if key in comp.attrs:
                 if isinstance(path1, str):
                     percent = percent_diff(node.attrs[key], comp.attrs[key])
                 else:
-                    #print(f'Running comparison for [{key}: {val}], {type(val)}')
-                    #print(f'Comparison saved: {comp.attrs[key]}, {type(comp.attrs[key])}')
                     percent = percent_diff(val, comp.attrs[key])
                     #print(f'diff obtained: {percent}')
 
