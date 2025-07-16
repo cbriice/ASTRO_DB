@@ -107,7 +107,7 @@ def register_graph_callbacks(app):
     def handle_plotall(n, dim, metric, path):
         #print(path)
         if n == 0:
-            return ""
+            return "", ntng()
         else:
             metric_b = True if metric == 'metric-true' else False
         #because of previous ui selections, this is guaranteed to return a list of either 2d or 3d plots of all plottable data from one dataframe. -> no target arg
