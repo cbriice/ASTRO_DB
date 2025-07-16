@@ -190,10 +190,10 @@ def register_main_callbacks(app):
             return ''
         
         df = process_upload(contents, None)
-        df['Start_Button'] = 0.0
+        df['Start_Button_Voltage (V)'] = 0.0
 
         if 0 <= idx < len(df):
-            df.at[idx, 'Start_Button'] = 4.7
+            df.at[idx, 'Start_Button_Voltage (V)'] = 4.7
         else:
             return html.Span('Index out of bounds')
         

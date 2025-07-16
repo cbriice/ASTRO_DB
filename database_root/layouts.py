@@ -56,7 +56,7 @@ def del_or_move():
 
 def start_col1():
     return html.Div([
-        html.Label('column number and file:'), 
+        html.Label('row number and file:'), 
         dcc.Input(id = 'col-index', type = 'number', placeholder=0), html.Br(),
         dcc.Upload(
             id=f'upload-newcol',
