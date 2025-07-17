@@ -7,6 +7,39 @@ import plotly.graph_objects as go
 import utils.plot_tools as pt
 from utils.constants import MASTER_FILE
 
+#----- global plot cache to make plot all case logic more efficient -----
+import uuid, time
+from threading import Lock
+
+plot_cache = {}
+cache_lock = Lock()
+CACHE_TL = 60 * 5
+
+def set_plot_cache(data):
+    key = str(uuid.uuid4())
+    with cache_lock:
+        plot_cache[key] = (time.time(), data)
+    return key
+
+def get_plot_cache(key):
+    with cache_lock:
+        val = plot_cache.get(key)
+        if val:
+            t, data = val
+            if time.time() - t < CACHE_TL:
+                return data
+            else:
+                del plot_cache[key]
+        return None
+    
+def clean_expired_cache():
+    now = time.time()
+    with cache_lock:
+        expired_keys = [k for k, (t, _) in plot_cache.items() if now - t > CACHE_TL]
+        for k in expired_keys:
+            del plot_cache[k]
+
+#----------------- callback logic -----------------------
 def update_global(global_storage, stored_plots):
     if not stored_plots:
         return global_storage or []
@@ -24,7 +57,6 @@ def update_global(global_storage, stored_plots):
     return global_copy
 
 def register_graph_callbacks(app):
-
     #graphmain_layout
     @app.callback(
         Output('graph-page-2', 'children'),
@@ -135,7 +167,8 @@ def register_graph_callbacks(app):
                 print(f'No valid plots in {plots}')
                 return "", {}
             
-            return lgi.show_plotall(plot_dict), dict_to_store
+            session_key = set_plot_cache(dict_to_store)
+            return lgi.show_plotall(plot_dict), {'session_id': session_key}
 
     #show_plotall triggered by submit button, shows graphs from checklist --------------------------------
     @app.callback(
@@ -154,8 +187,13 @@ def register_graph_callbacks(app):
         graphs = []
         active_plots = []
         for i, plt in enumerate(selected_plots):
-            if plt in plot_dict:
-                fig_data = plot_dict[plt]
+            session_id = plot_dict.get('session_id')
+            plot_data_dict = get_plot_cache(session_id)
+            if not plot_data_dict:
+                return html.Span('Session expired or invalid'), ntng()
+            
+            if plt in plot_data_dict:
+                fig_data = plot_data_dict[plt]
                 if isinstance(fig_data, dict) and 'figure' in fig_data:
                     fig = go.Figure(fig_data['figure']) if isinstance(fig_data['figure'], dict) else fig_data['figure']
                     source = fig_data.get('source', 'Unknown')
