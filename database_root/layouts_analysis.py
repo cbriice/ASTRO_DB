@@ -12,6 +12,7 @@ def analysis_main():
             ], style = {'padding-left': '700px'}),
             html.Div(id = 'analysis-2')
         ], style = {'padding-left': '50px', 'padding-right': '50px', 'padding-bottom': '50px'}),
+
         dcc.Store(id = 'benchmark-mets', storage_type = 'session', data = []),
         dcc.Store(id='machine-mets-store', data=[], storage_type='session'),
         dcc.Store(id='sensor-mets-store', data=[], storage_type='session'),
@@ -46,12 +47,13 @@ def load_storage(path1, paths2, plot_data):
         html.Button('Load graphs', id = 'load-plots', n_clicks = 0),
         html.Br(), html.Br(),
 
-        html.Label('To search for similar builds to benchmark, enter desired normalized difference threshold (in percentage):'),
+        html.Label('To search for similar builds to benchmark, enter desired value tolerance threshold (in percentage):'),
         dcc.Input(id = 'norm-threshold', type = 'number', size = '30'),
         html.Button('Search', id = 'search-custom-benchmark', n_clicks = 0), html.Br(), html.Br(),
 
         html.Div(id = 'analysis-3'),
-        html.Div(id = 'analysis-3-2')
+        html.Div(id = 'analysis-3-2'),
+        html.Div(id = 'benchmark-search-results')
     ])
 
 def custom_benchmark1():

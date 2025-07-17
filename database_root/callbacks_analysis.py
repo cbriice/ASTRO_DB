@@ -29,7 +29,7 @@ def register_analysis_callbacks(app):
             return html.Span('Storage cleared. Load data to analyze from search tab.'), None, [], []
         
         elif trigg == 'load-storage':
-            if (store1 and store2) or stored_plots:
+            if store1 or store2 or stored_plots:
                 return la.load_storage(store1, store2, stored_plots), ntng(), ntng(), ntng()
             else:
                 return html.Span(f'Error: not enough data to load. 1: {store1} | 2: {store2} | 3: {stored_plots}'), ntng(), ntng(), ntng()
@@ -273,23 +273,59 @@ def register_analysis_callbacks(app):
         State('norm-threshold', 'value'),            #add layout - button, input for threshold of normalized
         prevent_initial_call=True
     )
-    def search_db_with_benchmark(n, custom_bench, threshold):
+    def search_db_with_benchmark(n, custom_bench, tolerance):
         if n == 0:
             return ''
         
         if not custom_bench:
             return html.Span('No custom benchmark provided.', style={'color': 'red'})
+        
+        tolerance = tolerance or 10     #default tolerance of 10%
 
-        #unfinished - logic to run the search in efficient way because this is probably shit
+        #assign tolerance values
+        upper_dict = {}
+        lower_dict = {}
+        key_list = []
         for key, val in custom_bench.items():
-            results = search_for_att(MASTER_FILE, att=val, groupsonly=False, lowerbound=None, upperbound=None, exactvalue=None)
+            lower_dict[key] = val - val * (tolerance / 100)
+            upper_dict[key] = val + val * (tolerance / 100)
+            key_list.append(key)
+        
+        #get a list of result lists, where each result list corresponds to builds which have the att key within the given range
+        results = []
+        for key in key_list:
+            results.append(search_for_att(MASTER_FILE, key, False, lower_dict[key], upper_dict[key], None))
+        
+        if not results: return html.Span('No results found', style = {'textAlign': 'center'})
+        
+        #need to find results which are present in every list
+        results_names = [set(res.name for res in result_list) for result_list in results]
+        common_names = set.intersection(*results_names)
+        all_results_flat = {res.name: res for sublist in results for res in sublist}
+        results_cleaned = [all_results_flat[name] for name in common_names]
 
+        if not results_cleaned: return html.Span('No results found', style = {'textAlign': 'center'})
+
+        #generate and format tables
         rendered = []
-        for path, diffs, norm in results:
+        name_1 = 'Custom benchmark'
+        for res in results_cleaned:
+            diffs, norm = conformance_comp(custom_bench, res.name, MASTER_FILE)
             table = analysis_table(diffs, norm)
+            name_2 = res.name.split('/')[-1]
             rendered.append(html.Div([
-                html.Label(f'Match: {path}'),
-                table, html.Hr()
+                html.Label(f'[{name_1}] vs [{name_2}]'),
+                table
             ]))
 
-        return html.Div(rendered)
+        return html.Div([
+            html.Span(f'Found {len(results_cleaned)} result(s) with metrics within {tolerance}% of the custom benchmark'), html.Br(),
+            html.Hr(),
+            html.Div(rendered, style={
+                'display': 'flex',
+                'flexWrap': 'wrap',
+                'gap': '50px',
+                'justifyContent': 'center'
+            }),
+            html.Br()
+        ])
