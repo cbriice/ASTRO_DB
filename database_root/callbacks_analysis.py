@@ -161,7 +161,7 @@ def register_analysis_callbacks(app):
         
     #manually entered
     @app.callback(
-        [Output('other-mets-store', 'data'),
+        [Output('other-mets-store', 'data', allow_duplicate=True),
          Output('custom-bench-2', 'children', allow_duplicate=True)],
         Input('add-other-mets', 'n_clicks'),
         State('other-mets-met', 'value'),
@@ -174,7 +174,7 @@ def register_analysis_callbacks(app):
     
     #machine ops
     @app.callback(
-        [Output('machine-mets-store', 'data'),
+        [Output('machine-mets-store', 'data', allow_duplicate=True),
          Output('custom-bench-2', 'children', allow_duplicate=True)],
         Input('add-mach-mets', 'n_clicks'),
         State('machinefile-mets-select', 'value'),
@@ -187,7 +187,7 @@ def register_analysis_callbacks(app):
     
     #sensor
     @app.callback(
-        [Output('sensor-mets-store', 'data'),
+        [Output('sensor-mets-store', 'data', allow_duplicate=True),
          Output('custom-bench-2', 'children', allow_duplicate=True)],
         Input('add-sens-mets', 'n_clicks'),
         State('sensorfile-mets-select', 'value'),
@@ -212,16 +212,19 @@ def register_analysis_callbacks(app):
     #clear selection 
     @app.callback(
         [Output('benchmark-mets', 'data', allow_duplicate=True),
-        Output('custom-bench-2', 'children', allow_duplicate=True),
-        Output('custom-bench-3', 'children', allow_duplicate=True)],
+         Output('machine-mets-store', 'data', allow_duplicate=True),
+         Output('sensor-mets-store', 'data', allow_duplicate=True),
+         Output('other-mets-store', 'data', allow_duplicate=True),
+         Output('custom-bench-2', 'children', allow_duplicate=True),
+         Output('custom-bench-3', 'children', allow_duplicate=True)],
         Input('clear-custom-bench', 'n_clicks'),
         prevent_initial_call=True
     )
     def clear_metrics(n):
         if n == 0:
-            return ntng(), '', ''
+            return ntng(), ntng(), ntng(), ntng(), '', ''
         else:
-            return [], html.Span('Cleared stored metrics.'), ''
+            return [], [], [], [], html.Span('Cleared stored metrics.'), ''
     
     #---now get values for metrics stored---
     @app.callback(
