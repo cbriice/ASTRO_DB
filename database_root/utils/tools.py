@@ -227,3 +227,15 @@ def clean_temp_exports(folder, max_age_minutes):
         if os.path.isfile(fpath):
             if now - os.path.getmtime(fpath) > max_age_minutes * 60:
                 os.remove(fpath)
+
+import threading
+plot_cache = {}
+cache_lock = threading.Lock()
+CACHE_TL = 60 * 5
+
+def clean_expired_cache():
+    now = time.time()
+    with cache_lock:
+        expired_keys = [k for k, (t, _) in plot_cache.items() if now - t > CACHE_TL]
+        for k in expired_keys:
+            del plot_cache[k]

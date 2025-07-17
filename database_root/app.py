@@ -8,7 +8,7 @@ from flask import Flask, session, redirect, url_for, request, jsonify, send_file
 from authlib.integrations.flask_client import OAuth # type: ignore
 from werkzeug.middleware.proxy_fix import ProxyFix
 from itsdangerous import URLSafeTimedSerializer
-from utils.constants import EXPORT_DIR
+from utils.constants import EXPORT_DIR, WHITELIST
 
 #-------------------------- authentication system setup --------------------------------
 #normal authentication workflow
@@ -126,7 +126,7 @@ def download_file(filename):
 
 #----------------------------- dash app setup ------------------------------------------
 from callbacks_main import register_main_callbacks
-from utils.constants import MAIN_MENU_OPS, MASTER_FILE, WHITELIST
+from utils.constants import MAIN_MENU_OPS, MASTER_FILE
 from callbacks_graphs import register_graph_callbacks
 from callbacks_uploaddata import register_upload_callbacks
 from callbacks_search import register_search_callbacks
@@ -149,22 +149,22 @@ def serve_layout():
         return dcc.Location(href = '/login', id = 'redirect')
     
     return html.Div([
-    html.H2("best database of all time", style = {'text-align': 'center'}),
+        html.H2("best database of all time", style = {'text-align': 'center'}),
 
-    html.Div(
-        dbc.ButtonGroup([
-            dbc.Button(opt, id={'type': 'program-option', 'index': i}, n_clicks=0)
-            for i, opt in enumerate(MAIN_MENU_OPS)], 
-            className='mb-3'), 
-            className = 'd-flex justify-content-center'
-        ), html.Hr(),
-        html.Div(id='main-content'),
-        
-        #global dcc.Store objects for saving/loading shit for comparison
-        dcc.Store(id = 'global-storage-1', data = [], storage_type = 'session'),
-        dcc.Store(id = 'global-storage-2', data = [], storage_type = 'session'),
-        dcc.Store(id = 'global-graph-storage', data = [], storage_type = 'session')     
-])
+        html.Div(
+            dbc.ButtonGroup([
+                dbc.Button(opt, id={'type': 'program-option', 'index': i}, n_clicks=0)
+                for i, opt in enumerate(MAIN_MENU_OPS)], 
+                className='mb-3'), 
+                className = 'd-flex justify-content-center'
+            ), html.Hr(),
+            html.Div(id='main-content'),
+            
+            #global dcc.Store objects for saving/loading shit for comparison
+            dcc.Store(id = 'global-storage-1', data = [], storage_type = 'session'),
+            dcc.Store(id = 'global-storage-2', data = [], storage_type = 'session'),
+            dcc.Store(id = 'global-graph-storage', data = [], storage_type = 'session')     
+    ])
 
 app.layout = serve_layout
 
@@ -174,6 +174,16 @@ register_graph_callbacks(app)
 register_search_callbacks(app)
 register_att_callbacks(app)
 register_analysis_callbacks(app)
+
+#periodically clean out plot all graph cache so it doesn't get cluttered. just unlucky if this lines up with someone using it lol
+import threading
+from utils.tools import clean_expired_cache
+def schedule_cache_cleaner(interval=1800):
+    clean_expired_cache()
+    threading.Timer(interval, schedule_cache_cleaner, [interval]).start()
+
+schedule_cache_cleaner()
+
 
 if __name__ == '__main__':
     app.run(debug=True)

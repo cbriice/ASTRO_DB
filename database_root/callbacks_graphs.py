@@ -31,13 +31,6 @@ def get_plot_cache(key):
             else:
                 del plot_cache[key]
         return None
-    
-def clean_expired_cache():
-    now = time.time()
-    with cache_lock:
-        expired_keys = [k for k, (t, _) in plot_cache.items() if now - t > CACHE_TL]
-        for k in expired_keys:
-            del plot_cache[k]
 
 #----------------- callback logic -----------------------
 def update_global(global_storage, stored_plots):
