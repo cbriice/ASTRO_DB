@@ -54,84 +54,93 @@ def register_upload_callbacks(app):
                 
                 return lud.upload_file_section(1), parent_path, name, 'build'
             
-    #build data upload
-    from cleaners.isd_df_cleaner import isd_df_clean, vectorized_isd_df_clean
-    from cleaners.md_df_cleaner import md_df_clean, vectorized_md_df_clean
-    from cleaners.mcd_df_cleaner import mcd_df_clean, gpt_clean
+    #-------------------- build data upload ---------------------
+    from cleaners.isd_df_cleaner import vectorized_isd_df_clean
+    from cleaners.md_df_cleaner import vectorized_md_df_clean
+    from cleaners.mcd_df_cleaner import gpt_clean
+    from utils.helpers import process_temp
 
     @app.callback(
         [Output('upload-status-1', 'children'),
          Output('attribute-adder-1', 'children'),
          Output('uploaded-filepath-1', 'data')],
         [Input('submit-upload-1', 'n_clicks'),
-         Input('upload-data-1', 'contents')],
-        State('upload-data-1', 'filename'),
+         Input('upload-data-1', 'isCompleted')], ##
+        State('upload-data-1', 'fileNames'),     ##
         State('parent-path-1', 'data'),
         State('name-upload-1', 'data'),
         State('cleaned-or-not', 'value'),
-        State('sample-rate', 'value')
+        State('sample-rate', 'value'),
+        State('upload-data-1', 'upload_id')     ##
     )
-    def whoevenreadsthese(n, contents, filename, parent_path, name, cleaned_or_not, sample_rate):
-        if n == 0 and not contents:
+    def whoevenreadsthese(n, is_complete, filename, parent_path, name, cleaned_or_not, sample_rate, upload_id):
+        if n == 0 and not is_complete:
             return '', '', ntng()
-        elif n == 0 and contents:
+        elif n == 0 and is_complete:
             return html.Span(f'Received {filename}', style = {'color': 'green'}), '', ntng()
-        elif n > 0 and not contents:
+        elif n > 0 and not is_complete:
             return html.Span('No file uploaded', style = {'color': 'red'}), '', ntng()
         
-        else:
-            data = process_upload(contents, None)
-            print(f'Datatype after processing callback: {type(data)}')
+        if is_complete:
+            if filename and isinstance(filename, list):
+                if len(filename) > 0:
+                    filename = filename[0]
+            else:
+                return html.Span('Error receiving file: no filename found', style={'color': 'red'}), '', ntng()
+            
+            print(f'[Dash] Upload {filename} [{upload_id}] received, beginning processing')
+            full_path = os.path.join(UPLOAD_FOLDER_ROOT, upload_id, filename)
+            data = process_temp(full_path)
+            os.remove(full_path)
+            print(f'[Dash] {full_path} extracted, processed as {type(data)} and flushed')
+
             auto_adjusted = False
             build_file = True
             low_quality_interpolation = False
 
             #if user selects clean, need to make sure it's a csv and then find out what kind of csv to run which kind of cleaner function
             if cleaned_or_not == 'need-clean':
-                content_type, content = contents.split(',', 1)
-                if content_type:
-                    if content_type.startswith('data:text/csv') or 'ms-excel' in content_type: #process_upload will have output a dataframe so now we can proceed with cleaning
-                        if sample_rate:
-                            if sample_rate > 20:
-                                return html.Span('Specified sample rate is too high (should be <=20)', style = {'color': 'red'}), '', ntng()
-                            if isinstance(sample_rate, float):
-                                sample_rate = int(sample_rate)
-                            
-                            #sample rate stored as attribute on build. sample rate should be constant for all files associated with one build. handles this automatically
-                            try:
-                                print(f'Looking for sample rate attribute in {parent_path} to match...')
-                                with h5tbx.File(MASTER_FILE, 'r') as master:
-                                    build_node = master[parent_path]
-                                    sample_att = build_node.attrs['sample_rate']
-                                    if sample_rate != sample_att:
-                                        sample_rate = sample_att
-                                        auto_adjusted = True
-                            except Exception as e:
-                                print(f'Sample rate attribute not found at {parent_path}, or there was an error. Continuing with data upload. {e}')
+                if isinstance(data, pd.DataFrame): #process_temp output a dataframe so now we can proceed with cleaning
 
-                            #check whether isd or mcd
-                            if 'Force_1_Force (lbs.)' in data.columns:
-                                build_file = True
-                                data = vectorized_isd_df_clean(data, sample_rate)
-                                print(f'In-situ data cleaned and reprocessed at {sample_rate} Hz')
+                    if sample_rate:
+                        if sample_rate > 20:
+                            return html.Span('Specified sample rate is too high (should be <=20)', style = {'color': 'red'}), '', ntng()
+                        if isinstance(sample_rate, float):
+                            sample_rate = int(sample_rate)
+                        
+                        #sample rate stored as attribute on build. sample rate should be constant for all files associated with one build. handles this automatically
+                        try:
+                            print(f'Looking for sample rate attribute in {parent_path} to match...')
+                            with h5tbx.File(MASTER_FILE, 'r') as master:
+                                build_node = master[parent_path]
+                                sample_att = build_node.attrs['sample_rate']
+                                if sample_rate != sample_att:
+                                    sample_rate = sample_att
+                                    auto_adjusted = True
+                        except Exception as e:
+                            print(f'Sample rate attribute not found at {parent_path}, or there was an error. Continuing with data upload. {e}')
 
-                            else:
-                                #idk how to safely check for mcd since the column headers are so nondescriptive so im taking the easy way out
-                                try:
-                                    data, low_quality_interpolation = gpt_clean(data, sample_rate)
-                                    build_file = True
-                                    print(f'Motion capture data cleaned and reprocessed at {sample_rate} Hz')
-                                except Exception as e:
-                                    build_file = False
-                                    print(f"You can (probably) ignore this but I'm logging it: {e}")
-                                    pass    #if this throws an error, its probably just a random csv and shouldnt go through a dedicated process func
-                    
+                        #check whether isd or mcd
+                        if 'Force_1_Force (lbs.)' in data.columns:
+                            build_file = True
+                            data = vectorized_isd_df_clean(data, sample_rate)
+                            print(f'In-situ data cleaned and reprocessed at {sample_rate} Hz')
+
                         else:
-                            return html.Span('Can\'t clean data without specified sample rate', style = {'color': 'red'}), '', ntng()
+                            #idk how to safely check for mcd since the column headers are so nondescriptive so im taking the easy way out
+                            try:
+                                data, low_quality_interpolation = gpt_clean(data, sample_rate)
+                                build_file = True
+                                print(f'Motion capture data cleaned and reprocessed at {sample_rate} Hz')
+                            except Exception as e:
+                                build_file = False
+                                print(f"You can (probably) ignore this but I'm logging it: {e}")
+                                pass    #if this throws an error, its probably just a random csv and shouldnt go through a dedicated process func
+                
                     else:
-                        print("Can't clean non-csv data. Continuing with normal data upload")
+                        return html.Span('Can\'t clean data without specified sample rate', style = {'color': 'red'}), '', ntng()
                 else:
-                    return html.Span('No content', style = {'color': 'red'}), '', ntng()
+                    print("Can't clean non-csv data. Continuing with normal data upload")
             
             try:
                 success = add_data(data, MASTER_FILE, parent_path, name, False, build_file)
@@ -367,7 +376,9 @@ def register_upload_callbacks(app):
             else:
                 return html.Span(f'Attribute assignment failed. Check console.', style = {'color': 'red'})
             
-    #------------------------------------------------ upload initial machine file
+    #------------------------------- upload initial machine file ---------------------------
+    from utils.helpers import process_temp
+    from utils.constants import UPLOAD_FOLDER_ROOT
 
     @app.callback(
         [Output('upload-machine-result', 'children'),
@@ -375,26 +386,31 @@ def register_upload_callbacks(app):
          Output('att-upload-machine', 'children'),
          Output('path-for-atts-machine', 'data')],
         [Input('submit-machine-file', 'n_clicks'),
-         Input('upload-machine', 'contents')],
+         Input('upload-machine', 'isCompleted')],   ##
         State('alloy-choice', 'value'),
         State('build-id-machine', 'value'),
-        State('upload-machine', 'filename'),
+        State('upload-machine', 'fileNames'),   ##
         State('build-fail-bool', 'value'),
-        State('machine-file-hz', 'value')
+        State('machine-file-hz', 'value'),
+        State('upload-machine', 'upload_id')    ##
     )
-    def machine_upload(n_clicks, contents, alloy, build_id, filename, fail, sample_rate):
+    def machine_upload(n_clicks, is_completed, alloy, build_id, filename, fail, sample_rate, upload_id):
         trigg = ctx.triggered[0]['prop_id'] if ctx.triggered else ''
+        if filename and isinstance(filename, list):
+            if len(filename) > 0:
+                filename = filename[0]
 
-        if trigg == 'upload-machine.contents':
-            if contents:
+        if trigg == 'upload-machine.isCompleted':
+            if is_completed:
                 return '', html.Span(f'Received file: {filename}', style = {'color': 'green'}), '', ntng()
             else:
                 return '', '', '', ntng()
-            
+        
+        #make sure all required info exists
         elif trigg == 'submit-machine-file.n_clicks':
             if not filename.endswith('csv'):
                 return html.Span("Input file should be a csv", style = {'color': 'red'}), '', '', ntng()
-            if not alloy or not build_id or not contents or not sample_rate:
+            if not alloy or not build_id or not is_completed or not sample_rate:
                 return html.Span("Error: Missing required information.", style = {'color': 'red'}), '', '', ntng()
             if sample_rate:
                 if sample_rate > 20:
@@ -403,18 +419,19 @@ def register_upload_callbacks(app):
                     sample_rate = int(sample_rate)
             try:
                 failed = True if fail == 'True' else False
-                content_type, content_string = contents.split(',')
-                decoded = base64.b64decode(content_string)
-                csv_io = io.StringIO(decoded.decode('utf-8'))
                 
-                #find where data starts in csv
-                header_row = find_header_line(csv_io)
-                csv_io.seek(0)
+                print(f'[Dash] Upload {filename} [{upload_id}] received, beginning processing')
+                full_path = os.path.join(UPLOAD_FOLDER_ROOT, upload_id, filename)
+                userfile = process_temp(full_path)
+                os.remove(full_path)
+                print(f'[Dash] {full_path} extracted, processed as {type(userfile)} and flushed')
 
-                print('Machine file obtained, starting clean...')
-                userfile = pd.read_csv(csv_io, skiprows = header_row)
-                userfile = vectorized_md_df_clean(userfile, sample_rate)
-                print(f'Machine file cleaned and reprocessed at {sample_rate} Hz')
+                if isinstance(userfile, pd.DataFrame):
+                    print('[Dash] Beginning clean...')
+                    userfile = vectorized_md_df_clean(userfile, sample_rate)
+                    print(f'[Dash] Machine file cleaned and reprocessed at {sample_rate} Hz')
+                else:
+                    return html.Span('Error: uploaded file must be .csv', style={'color': 'red'}), '', '', ntng()
 
                 build_file, atts = bt.create_machine_hdf5(userfile, build_id, filename)
 
@@ -440,7 +457,7 @@ def register_upload_callbacks(app):
                 ), '', add_machine_atts(parent), parent
             
             except Exception as e:
-                return f'Something went wrong: {e}', '', '', ntng()
+                return html.Span(f'Something went wrong: {e}', style={'color': 'red'}), '', '', ntng()
         else:
             return '', '', '', ntng()
         

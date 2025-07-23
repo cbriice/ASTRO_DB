@@ -2,6 +2,9 @@
 
 MASTER_FILE = 'master2.h5'
 
+import os, tempfile
+UPLOAD_FOLDER_ROOT = os.path.join(tempfile.gettempdir(), "uploads_tmp")
+
 MACHINE_FILE_SAMPLE_DEFAULT = 20
 ISD_FILE_SAMPLE_DEFAULT = 5
 MCD_FILE_SAMPLE_DEFAULT = 20

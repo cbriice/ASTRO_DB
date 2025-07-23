@@ -9,5 +9,5 @@ xarray
 gunicorn
 Flask
 Authlib
-
+dash-uploader
 

@@ -1,8 +1,5 @@
-import dash_bootstrap_components as dbc
-from utils.helpers import get_keys
 from utils.constants import X_OPS, Y_OPS, Z_OPS, AA_ALLOY_OPS
 from dash import html, dcc
-from utils.constants import MASTER_FILE
 
 #this file doesn't include layout for "upload initial machine file" section bc i didnt feel like i needed to move it bc the file was still small so go look in layouts.py
 
@@ -60,22 +57,39 @@ def builddata_upload_layout():
     ])
 
 #---------------------------------
+import dash_uploader as du
+
 def upload_file_section(g_id):
+    if g_id == 1:
+        upload_block = html.Div([
+            html.Label('Upload build data from computer:'), 
+            du.Upload(
+                id='upload-data-1',
+                text='Drag and Drop or Select a File',
+                upload_id='build_gen',
+                cancel_button=True
+            )
+        ], style={'padding-right': '300px'})
+    else:
+        upload_block =  html.Div([
+            html.Label("Upload data from computer:"),
+            dcc.Upload(
+                id=f'upload-data-{g_id}',
+                children=html.Div(html.A('Select Files')), 
+                style={
+                    'width': '30%',
+                    'height': '60px',
+                    'lineHeight': '60px',
+                    'borderWidth': '2px',
+                    'borderStyle': 'solid',
+                    'textAlign': 'center',
+                },
+                multiple=False
+            )
+        ])
+
     return html.Div([
-        html.Label("Upload data from computer:"),
-        dcc.Upload(
-            id=f'upload-data-{g_id}',
-            children=html.Div(html.A('Select Files')), 
-            style={
-                'width': '30%',
-                'height': '60px',
-                'lineHeight': '60px',
-                'borderWidth': '2px',
-                'borderStyle': 'solid',
-                'textAlign': 'center',
-            },
-            multiple=False
-        ), html.Br(),
+        upload_block, html.Br(),
 
         html.H6('Is this a csv file that needs to be cleaned?'),
         html.Label('Raw in-situ, motion capture files should be cleaned.'), html.Br(),

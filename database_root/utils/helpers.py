@@ -40,7 +40,8 @@ def get_keys(file, master_file):
             else: return []
         else: return []
 
-#helper for data upload to decide what type of file it is and how to output to be handled by add_data()
+#----------------------- upload processors --------------------------
+#helper for data processing for upload via dcc.Upload
 def process_upload(contents, input_string):
     print(f"[DEBUG] Raw contents: {contents[:100]}")
     if contents is None:
@@ -110,7 +111,74 @@ def process_upload(contents, input_string):
         else:
             print(f'data could not be processed. input {contents} ({type(contents)}) shit the bed')
             return None
+        
+#same shit for du.Upload
+import os
 
+def process_temp(filepath):
+    ext = os.path.splitext(filepath)[-1].lower()
+    try:
+        if ext == '.csv' or 'excel' in filepath.lower():
+            print('[PROCESS] Registered .csv-like file')
+            try:
+                with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                    raw_text = f.read()
+                    print('[PROCESS] File read successfully')
+
+            except UnicodeEncodeError:
+                print('[DEBUG] encoding="utf-8" failed. trying fallback')
+                with open(filepath, 'r') as f:
+                    raw_text = f.read()
+
+            df = handle_csv(raw_text)
+            return df
+        
+        elif ext in ['.png', '.jpg', '.jpeg']:
+            print('[PROCESS] Registered image file')
+            try:
+                with open(filepath, 'rb') as f:
+                    raw_bytes = f.read()
+                    print('[PROCESS] File read successfully')
+                return io.BytesIO(raw_bytes)
+            
+            except Exception as e:
+                print(f'[ERROR] failed to return io.BytesIO(raw_bytes): {e}')
+                return None
+        
+        else:
+            print('[PROCESS] Registered file: not image or csv')
+            try:
+                with open(filepath, 'r', encoding='utf-8', errors='replace') as f:
+                    raw = f.read()
+                print('[DEBUG] File read as "utf-8" encoded string')
+                return io.StringIO(raw)
+            except:
+                with open(filepath, 'rb') as f:
+                    raw = f.read()
+                print('[DEBUG] File read as bytes')
+                return io.BytesIO(raw)
+    
+    except Exception as e:
+        print(f'[ERROR] Failed to load {filepath}: {e}')
+        return None
+
+#handle csvs
+def handle_csv(raw_text):
+    try:
+        if isinstance(raw_text, str):
+            raw_text = raw_text.replace('°', '')
+            raw_text = raw_text.replace('�', '')
+            print('[PROCESS] replaced bad characters in raw csv')
+
+        sio = io.StringIO(raw_text)
+        header_row = find_header_line(sio)
+        sio.seek(0)
+        return pd.read_csv(sio, skiprows=header_row)
+    except Exception as e:
+        print(f'[ERROR] handle_csv() was most likely passed a non-csv object. {e}')
+        return None
+    
+#---------------------
 def verify_existence(path):
     with h5tbx.File(MASTER_FILE, 'r') as master:
         if path in master:

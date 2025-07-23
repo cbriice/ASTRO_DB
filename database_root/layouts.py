@@ -129,22 +129,17 @@ def display_data_info(formatted_atts, stored_data, graph):
     ], style = {'padding-bottom': '75px'})
 
 #-------------------------------- upload initial machine file layouts
+import dash_uploader as du
+
 def uploadmachine_layout():
     return html.Div([
         html.H4("Initialize build file with machine data", style = {'text-align': 'center'}),
         html.Label("Drag and drop or click and upload machine .csv file."),
-        dcc.Upload(
+        du.Upload(
             id = 'upload-machine',
-            children = html.Div(html.A('Select Files')), 
-            style = {
-                'width': '30%',
-                'height': '60px',
-                'lineHeight': '60px',
-                'borderWidth': '2px',
-                'borderStyle': 'solid',
-                'textAlign': 'center',
-            },
-            multiple = False
+            text='Drag and Drop or Select a File',
+            upload_id='machine',
+            cancel_button=True
         ),
         html.Div(id = 'machine-file-status'), html.Br(),
 
