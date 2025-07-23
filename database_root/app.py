@@ -126,12 +126,13 @@ def download_file(filename):
 
 #----------------------------- dash app setup ------------------------------------------
 from callbacks_main import register_main_callbacks
-from utils.constants import MAIN_MENU_OPS, MASTER_FILE
+from utils.constants import MAIN_MENU_OPS, MASTER_FILE, UPLOAD_FOLDER_ROOT
 from callbacks_graphs import register_graph_callbacks
 from callbacks_uploaddata import register_upload_callbacks
 from callbacks_search import register_search_callbacks
 from callbacks_atts import register_att_callbacks
 from callbacks_analysis import register_analysis_callbacks
+import dash_uploader as du
 
 app = dash.Dash(
     __name__, 
@@ -140,6 +141,9 @@ app = dash.Dash(
     suppress_callback_exceptions = True
 )
 app.title = 'ASTRO Database Interface'
+
+#assign path for temp file saving for streamlined data upload
+du.configure_upload(app, UPLOAD_FOLDER_ROOT)
 
 #master file should be in the app working directory on the server. if this changes, update logic to have absolute filepath attached to master2.h5
 dbf.create_master_file(MASTER_FILE, {'machine': 'meld piece of shit'})
