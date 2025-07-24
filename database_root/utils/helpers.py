@@ -242,7 +242,7 @@ def get_stats(userfile: pd.DataFrame, mets, csv_path) -> dict:
         else:
             print(f'Warning: {met} not found in userfile columns. Skipping.')
     if csv_path:
-        stats.update({'csv_path': f'{csv_path}'})             
+        stats.update({'csv_path': f'{str(csv_path)}'})             
     return stats
 
 def to_float(val):

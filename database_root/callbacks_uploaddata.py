@@ -55,8 +55,7 @@ def register_upload_callbacks(app):
                 return lud.upload_file_section(1), parent_path, name, 'build'
             
     #-------------------- build data upload ---------------------
-    from cleaners.isd_df_cleaner import vectorized_isd_df_clean
-    from cleaners.md_df_cleaner import vectorized_md_df_clean
+    from cleaners.isd_df_cleaner_fast import isd_df_clean as fast_isd_clean
     from cleaners.mcd_df_cleaner import gpt_clean
     from utils.helpers import process_temp
 
@@ -123,7 +122,7 @@ def register_upload_callbacks(app):
                         #check whether isd or mcd
                         if 'Force_1_Force (lbs.)' in data.columns:
                             build_file = True
-                            data = vectorized_isd_df_clean(data, sample_rate)
+                            data = fast_isd_clean(data, sample_rate)
                             print(f'In-situ data cleaned and reprocessed at {sample_rate} Hz')
 
                         else:
@@ -379,6 +378,7 @@ def register_upload_callbacks(app):
     #------------------------------- upload initial machine file ---------------------------
     from utils.helpers import process_temp
     from utils.constants import UPLOAD_FOLDER_ROOT
+    from cleaners.md_df_clean_fast import vectorized_md_df_clean as fast_md_clean
 
     @app.callback(
         [Output('upload-machine-result', 'children'),
@@ -428,7 +428,7 @@ def register_upload_callbacks(app):
 
                 if isinstance(userfile, pd.DataFrame):
                     print('[Dash] Beginning clean...')
-                    userfile = vectorized_md_df_clean(userfile, sample_rate)
+                    userfile = fast_md_clean(userfile, sample_rate)
                     print(f'[Dash] Machine file cleaned and reprocessed at {sample_rate} Hz')
                 else:
                     return html.Span('Error: uploaded file must be .csv', style={'color': 'red'}), '', '', ntng()
